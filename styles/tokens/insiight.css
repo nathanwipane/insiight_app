@@ -1,0 +1,19 @@
+:root {
+  --brand-primary:         #ad46ff;
+  --brand-primary-subtle:  #f5f0ff;
+  --brand-bg:              #f8f9fa;
+  --brand-surface:         #ffffff;
+  --brand-surface-alt:     #fafafa;
+  --brand-border:          #e5e7eb;
+  --brand-border-subtle:   #f3f4f6;
+  --brand-text:            #0f1117;
+  --brand-text-secondary:  #374151;
+  --brand-text-muted:      #9ca3af;
+  --brand-text-disabled:   #d1d5db;
+  --brand-success:         #34d399;
+  --brand-font-sans:       var(--font-geist-sans);
+  --brand-font-mono:       var(--font-geist-mono);
+  --brand-radius-sm:       4px;
+  --brand-radius-md:       6px;
+  --brand-radius-lg:       8px;
+}

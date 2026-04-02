@@ -1,0 +1,19 @@
+:root {
+  --color-primary:         var(--brand-primary);
+  --color-primary-subtle:  var(--brand-primary-subtle);
+  --color-bg:              var(--brand-bg);
+  --color-surface:         var(--brand-surface);
+  --color-surface-alt:     var(--brand-surface-alt);
+  --color-border:          var(--brand-border);
+  --color-border-subtle:   var(--brand-border-subtle);
+  --color-text:            var(--brand-text);
+  --color-text-secondary:  var(--brand-text-secondary);
+  --color-text-muted:      var(--brand-text-muted);
+  --color-text-disabled:   var(--brand-text-disabled);
+  --color-success:         var(--brand-success);
+  --font-sans:             var(--brand-font-sans);
+  --font-mono:             var(--brand-font-mono);
+  --radius-sm:             var(--brand-radius-sm);
+  --radius-md:             var(--brand-radius-md);
+  --radius-lg:             var(--brand-radius-lg);
+}
