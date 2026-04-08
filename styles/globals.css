@@ -34,11 +34,11 @@ body {
 
 .auth-label {
   display: block;
-  font-size: 9px;
-  color: var(--color-text-muted);
+  font-size: 10px;
+  color: var(--color-text-secondary);
   letter-spacing: 0.1em;
   margin-bottom: 5px;
-  font-family: var(--font-mono);
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .auth-btn-primary {
@@ -76,3 +76,16 @@ body {
 /* Metric row stripe */
 .metric-row-even { background: var(--color-surface); }
 .metric-row-odd  { background: var(--color-surface-alt); }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Auth select input styles. */
+select.auth-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 28px;
+}

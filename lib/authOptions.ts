@@ -19,6 +19,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         parent_org_id: { label: "Parent Organisation Id", type: "text" }
       },
       async authorize(credentials) {
+        // ⚠️ REMOVE BEFORE DEPLOY — test credentials only
+        if (credentials?.email === "test@test.com" && credentials?.password === "Amplify123!") {
+          return { id: "1", email: "test@test.com", parent_org_id: "test-org" }
+        }
+        
+        
         if (!credentials?.email || !credentials?.password) {
           return null
         }

@@ -17,7 +17,7 @@ export default function AuthInput({
 }: AuthInputProps) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <label className="auth-label">// {label}</label>
+      <label className="auth-label">{label}</label>
       <input
         className="auth-input"
         type={type}

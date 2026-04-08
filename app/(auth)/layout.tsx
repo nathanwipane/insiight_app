@@ -1,4 +1,4 @@
-import Image from "next/image";
+import VersionLabel from "@/components/shared/VersionLabel";
 
 const METRICS = [
   { label: "impressions",      value: "2,871,920", delta: "+12.4%" },
@@ -65,17 +65,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         style={{ background: "var(--color-bg)", padding: "36px 52px", overflow: "hidden" }}
       >
         {/* Tag */}
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--brand-radius-sm)",
-          padding: "3px 8px", marginBottom: 24, width: "fit-content",
-        }}>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-primary)" }} />
-          <span style={{ fontSize: 9, color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>
-            INSIIGHT / ANALYTICS / v2.1
-          </span>
+        <div style={{ marginBottom: 24 }}>
+          <VersionLabel label="INSIIGHT / ANALYTICS / v2.1" />
         </div>
 
         <h2 style={{

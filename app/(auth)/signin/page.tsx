@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import AuthHeading from "@/components/auth/AuthHeading";
 import AuthInput from "@/components/auth/AuthInput";
 import AuthButton from "@/components/auth/AuthButton";
 import AuthDivider from "@/components/auth/AuthDivider";
+import { User } from "@/constants/types";
 
 // ── Inner form — uses useSearchParams so must be inside Suspense ──
 function SignInForm() {
@@ -14,21 +18,91 @@ function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]       = useState("");
+  const [redirecting, setRedirecting] = useState(false);
 
+  const AUTO_REDIRECT = false; // ← Toggle this for testing
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error"); // NextAuth appends ?error=CredentialsSignin on failure
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!AUTO_REDIRECT) return; // ← comment this line out for production
+    if (status === "authenticated" && session?.user) {
+      const user = session.user as User;
+      if (user.parent_org_id) {
+        setRedirecting(true);
+        router.replace(`/${user.parent_org_id}/dashboard`);
+      }
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // TODO: replace with signIn('credentials', { email, password, redirect: false })
-    // and handle result.error + redirect to /${user.parent_org_id}/dashboard
-    setTimeout(() => setIsLoading(false), 1500);
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        parent_org_id: "null",
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Invalid email or password.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Sign-in succeeded — redirect directly
+      setRedirecting(true);
+      const user = session?.user as User;
+      if (user?.parent_org_id) {
+        router.replace(`/${user.parent_org_id}/dashboard`);
+      } else {
+        router.refresh(); // fallback if session hasn't updated yet
+      }
+
+      // The useEffect watching session will handle the redirect once the session updates
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const displayError = error || (urlError === "CredentialsSignin" ? "Invalid email or password." : urlError);
+
+  if (redirecting || status === "loading") {
+    return (
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        padding: 40,
+      }}>
+        <div style={{
+          width: 24,
+          height: 24,
+          border: "2px solid var(--color-border-subtle)",
+          borderTopColor: "var(--color-text)",
+          borderRadius: "50%",
+          animation: "spin 0.6s linear infinite",
+        }} />
+        <p style={{
+          fontSize: 13,
+          color: "var(--color-text-muted)",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}>
+          Redirecting…
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
