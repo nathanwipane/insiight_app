@@ -3,6 +3,9 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* extend: transitionProperty */
+  --transition-property-width: width;
 }
 
 body {
@@ -38,7 +41,7 @@ body {
   color: var(--color-text-secondary);
   letter-spacing: 0.1em;
   margin-bottom: 5px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-mono);
 }
 
 .auth-btn-primary {

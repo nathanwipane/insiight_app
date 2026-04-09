@@ -131,7 +131,7 @@ function SignInForm() {
       {/* Form */}
       <form onSubmit={handleSubmit}>
         <AuthInput
-          label="email_address"
+          label="email address"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}

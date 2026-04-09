@@ -395,7 +395,7 @@ function RegisterForm() {
       {/* Form */}
       <form onSubmit={handleEmailSubmit}>
         <AuthInput
-          label="email_address"
+          label="email address"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}

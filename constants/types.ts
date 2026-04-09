@@ -29,6 +29,7 @@ export type User = {
   last_login: string,
   permissions?: string[] // Optional permissions array
   sessionExpires?: number // Optional session expiration timestamp
+  org_type?: "media_owner" | "media_agency" | "brand_advertiser" | string
 }
 
 export type SelectedAssetSOV = {

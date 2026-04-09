@@ -21,9 +21,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         // ⚠️ REMOVE BEFORE DEPLOY — test credentials only
         if (credentials?.email === "test@test.com" && credentials?.password === "Amplify123!") {
-          return { id: "1", email: "test@test.com", parent_org_id: "test-org" }
+          return {
+            id: "1",
+            email: "test@test.com",
+            parent_org_id: "test-org",
+            org_type: "media_owner",
+            permissions: [
+              "campaigns:view", "campaigns:create", "campaigns:edit", "campaigns:share",
+              "assets:view", "assets:create", "assets:edit", "assets:share",
+              "plans:view", "plans:create", "plans:edit", "plans:share",
+              "team:view", "team:add_remove",
+              "organisation:view", "organisation:add_remove",
+              "audience_plan:view", "audience_plan:edit"
+            ]
+          }
         }
-        
+        // ⚠️ END TEST CREDENTIALS
         
         if (!credentials?.email || !credentials?.password) {
           return null
@@ -62,8 +75,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             parent_org_id: credentials.parent_org_id !== "null" ? credentials.parent_org_id : user.parent_org_id, 
             role_id: user.role.id, 
             org_id: user.org_id, 
-            user_id: user.id, 
-            permissions: user.permissions 
+            user_id: user.id,
+            permissions: user.permissions,
+            org_type: user.org_type
           },
           process.env.JWT_SECRET as string,
           { expiresIn: '5h' }
