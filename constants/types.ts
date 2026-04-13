@@ -1,4 +1,4 @@
-
+// ––––––––––– constants/types.ts –––––––––––
 import { ColumnFiltersState } from "@tanstack/react-table"
 import {type LucideIcon } from "lucide-react"
 
@@ -477,4 +477,77 @@ export interface ClientInfoType {
   last_updated: string | null;
   setup_step : number;
   organisation_type:string
+}
+
+export interface DemographicsTotals {
+  total_males: number;
+  total_females: number;
+  age_distribution: Record<string, number>;
+  education_distribution: Record<string, number>;
+  occupation_distribution: Record<string, number>;
+  total_reach: number;
+  median_age: number;
+  median_weekly_household_income: number;
+  average_income_personal: number;
+  average_income_family: number;
+  last_updated: string;
+}
+
+export interface DemographicsIndexed {
+  [key: string]: string | null;
+}
+
+export interface DemographicsResponse {
+  data: {
+    totals: DemographicsTotals;
+    indexed: DemographicsIndexed;
+  };
+}
+
+export interface IncomeApiData {
+  income_range: string;
+  total_reach: number;
+}
+
+export interface CreativeBreakdownItem {
+  ad_plays: number;
+  reach: number;
+  impressions: number;
+  url: string;
+  first_played: string;
+  last_played: string;
+}
+
+export interface CreativeBreakdownResponse {
+  creative_breakdown: Record<string, CreativeBreakdownItem>;
+}
+
+export interface NewsletterReport {
+  week_end_date: string;
+  total_impressions: number;
+  unique_reach: number;
+  performance_summary: string;
+}
+
+export interface ImpressionsChartsType {
+  impressions_by_hour?: boolean;
+  impressions_by_suburb?: boolean;
+}
+
+export interface ImpressionsChartsResponse {
+  data: {
+    impressions_by_hour?: Record<string, number>;
+    impressions_by_suburb?: Record<string, number>;
+  };
+  status: boolean;
+}
+
+export interface CampaignAIOverview {
+  exec_summary: string;
+  audience_assessment: string;
+}
+
+export interface CoreMetricsResponse {
+  data: MetricsData[];
+  status: boolean;
 }

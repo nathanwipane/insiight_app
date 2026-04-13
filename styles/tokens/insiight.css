@@ -16,4 +16,12 @@
   --brand-radius-sm:       4px;
   --brand-radius-md:       6px;
   --brand-radius-lg:       8px;
+  --status-active-bg:    #dcfce7;
+  --status-active-text:  #16a34a;
+  --status-scheduled-bg:   #dbeafe;
+  --status-scheduled-text: #1d4ed8;
+  --status-completed-bg:   #ede9fe;
+  --status-completed-text: #7c3aed;
+  --status-draft-bg:   #f9fafb;
+  --status-draft-text: #9ca3af;
 }
