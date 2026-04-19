@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, PanelLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 interface TopBarProps {
   parentOrgId: string;
-  onToggleSidebar: () => void;
 }
 
 function useBreadcrumbs(pathname: string, parentOrgId: string) {
@@ -31,7 +30,7 @@ function useBreadcrumbs(pathname: string, parentOrgId: string) {
   }));
 }
 
-export default function TopBar({ parentOrgId, onToggleSidebar }: TopBarProps) {
+export default function TopBar({ parentOrgId }: TopBarProps) {
   const pathname    = usePathname();
   const breadcrumbs = useBreadcrumbs(pathname, parentOrgId);
 
@@ -44,16 +43,6 @@ export default function TopBar({ parentOrgId, onToggleSidebar }: TopBarProps) {
       }}
     >
       <div className="flex items-center gap-2 px-4 w-full">
-
-        <button
-          onClick={onToggleSidebar}
-          className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded shrink-0 -ml-1"
-          title="Toggle sidebar"
-        >
-          <PanelLeft size={15} />
-        </button>
-
-        <div className="h-4 w-px bg-[#e5e7eb] shrink-0" />
 
         <div className="flex items-center gap-1.5 text-xs text-gray-400 min-w-0">
           {breadcrumbs.map((crumb, i) => (

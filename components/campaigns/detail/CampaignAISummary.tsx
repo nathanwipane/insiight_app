@@ -32,6 +32,7 @@ export default function CampaignAISummary({ data, isLoading }: CampaignAISummary
       background: "var(--color-surface)",
       border: "1px solid var(--color-border)",
       borderRadius: 10, overflow: "hidden",
+      minHeight: 220,
     }}>
       {/* Header */}
       <div style={{

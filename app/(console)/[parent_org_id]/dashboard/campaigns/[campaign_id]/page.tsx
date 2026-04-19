@@ -11,8 +11,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/config";
 
 import CampaignDetailHeader, { DetailTab } from "@/components/campaigns/detail/CampaignDetailHeader";
-import CampaignAISummary from "@/components/campaigns/detail/CampaignAISummary";
-import CampaignStatCards from "@/components/campaigns/detail/CampaignStatCards";
+import CampaignMetricsRow from "@/components/campaigns/detail/CampaignMetricsRow";
+import CampaignTimeseriesCard from "@/components/campaigns/detail/CampaignTimeseriesCard";
+import CampaignGalleryQuickview from "@/components/campaigns/detail/CampaignGalleryQuickview";
 import CampaignInnerTabs, { InnerTab } from "@/components/campaigns/detail/CampaignInnerTabs";
 
 import CampaignPerformanceTab from "@/components/campaigns/detail/tabs/CampaignPerformanceTab";
@@ -137,11 +138,12 @@ export default function CampaignDetailPage() {
         {/* ── DASHBOARD TAB ── */}
         {activeTab === "dashboard" && (
           <>
-            {/* AI Summary */}
-            <CampaignAISummary data={ai} isLoading={coreLoading} />
+            <CampaignMetricsRow metrics={metrics} isLoading={coreLoading} aiOverview={ai} />
 
-            {/* Stat cards */}
-            <CampaignStatCards metrics={metrics} isLoading={coreLoading} />
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16, alignItems: "stretch" }}>
+              <CampaignTimeseriesCard />
+              <CampaignGalleryQuickview onViewAll={() => setActiveTab("pops")} />
+            </div>
 
             {/* Inner tab selector */}
             <CampaignInnerTabs activeTab={innerTab} onTabChange={setInnerTab} />

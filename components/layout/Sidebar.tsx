@@ -4,16 +4,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, PanelLeft } from "lucide-react";
 import { User } from "@/constants/types";
 import { usePermissionsBasedNavigation } from "@/hooks/usePermissionsBasedNavigation";
 
 interface SidebarProps {
   parentOrgId: string;
   collapsed: boolean;
+  onToggle: () => void;
 }
 
-export default function Sidebar({ parentOrgId, collapsed }: SidebarProps) {
+export default function Sidebar({ parentOrgId, collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user as User | undefined;
@@ -33,30 +34,63 @@ export default function Sidebar({ parentOrgId, collapsed }: SidebarProps) {
 
   return (
     <div
-      className="flex flex-col shrink-0 h-screen sticky top-0 border-r overflow-hidden"
+      className="flex flex-col shrink-0 border-r overflow-hidden"
       style={{
-        width: collapsed ? 52 : 208,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "100vh",
+        zIndex: 40,
+        width: collapsed ? 52 : 224,
         background: "var(--color-surface)",
         borderColor: "var(--color-border)",
         transition: "width 0.3s ease",
       }}
     >
-      {/* ── Logo + Nav ───────────────────────────────────────── */}
-      <div className="flex-1 overflow-hidden">
-
-        {/* Logo */}
-        <div className="flex items-center py-3">
-          <span style={{ width: 52 }} className="flex items-center justify-center shrink-0">
-            <div className="w-5 h-5 bg-[#0a0c12] rounded flex items-center justify-center">
-              <span className="text-[8px] font-black text-white leading-none">IN</span>
+      {/* ── Header: Logo + Toggle ────────────────────────────── */}
+      <div style={{
+        height: 44,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: collapsed ? "center" : "space-between",
+        padding: collapsed ? "0" : "0 16px",
+        borderBottom: "1px solid var(--color-border)",
+        flexShrink: 0,
+      }}>
+        {!collapsed && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 22, height: 22, background: "var(--color-text)",
+              borderRadius: 5, display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: "var(--color-surface)", letterSpacing: "-0.02em" }}>IN</span>
             </div>
-          </span>
-          {!collapsed && (
-            <span className="text-sm font-semibold text-[#111] tracking-wide whitespace-nowrap">
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>
               Insiight
             </span>
-          )}
-        </div>
+          </div>
+        )}
+        <button
+          onClick={onToggle}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--color-text)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "var(--color-text-muted)")}
+          style={{
+            width: 28, height: 28,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "transparent",
+            border: "none",
+            borderRadius: 6, cursor: "pointer",
+            color: "var(--color-text-muted)",
+            flexShrink: 0,
+          }}
+        >
+          <PanelLeft size={14} />
+        </button>
+      </div>
+
+      {/* ── Nav ──────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-hidden">
 
         {/* Nav groups — mt-2 wrapper keeps spacing consistent collapsed/expanded */}
         <div className="mt-2">
