@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Home, LogOut, PanelLeft } from "lucide-react";
 import { User } from "@/constants/types";
 import { usePermissionsBasedNavigation } from "@/hooks/usePermissionsBasedNavigation";
+import OrgSwitcher from "@/components/layout/OrgSwitcher";
 
 interface SidebarProps {
   parentOrgId: string;
@@ -47,31 +48,40 @@ export default function Sidebar({ parentOrgId, collapsed, onToggle }: SidebarPro
         transition: "width 0.3s ease",
       }}
     >
-      {/* ── Header: Logo + Toggle ────────────────────────────── */}
-      <div style={{
-        height: 44,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: collapsed ? "center" : "space-between",
-        padding: collapsed ? "0" : "0 16px",
-        borderBottom: "1px solid var(--color-border)",
-        flexShrink: 0,
-      }}>
+      {/* ── Header: Logo + Brand + OrgSwitcher + Toggle ──────── */}
+      <div
+        className="sidebar-header"
+        style={{
+          height: 44,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          justifyContent: collapsed ? "center" : undefined,
+          padding: collapsed ? "0" : "0 16px",
+          borderBottom: "1px solid var(--color-border)",
+          flexShrink: 0,
+        }}
+      >
         {!collapsed && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 22, height: 22, background: "var(--color-text)",
-              borderRadius: 5, display: "flex", alignItems: "center",
-              justifyContent: "center", flexShrink: 0,
-            }}>
+          <>
+            <div
+              className="sidebar-logo-icon"
+              style={{
+                width: 22, height: 22, background: "var(--color-text)",
+                borderRadius: 5, display: "flex", alignItems: "center",
+                justifyContent: "center", flexShrink: 0,
+              }}
+            >
               <span style={{ fontSize: 9, fontWeight: 800, color: "var(--color-surface)", letterSpacing: "-0.02em" }}>IN</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>
               Insiight
             </span>
-          </div>
+            <OrgSwitcher collapsed={collapsed} />
+          </>
         )}
         <button
+          className={!collapsed ? "ml-auto" : undefined}
           onClick={onToggle}
           onMouseEnter={e => (e.currentTarget.style.color = "var(--color-text)")}
           onMouseLeave={e => (e.currentTarget.style.color = "var(--color-text-muted)")}
