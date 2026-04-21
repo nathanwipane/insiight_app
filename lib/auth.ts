@@ -5,6 +5,8 @@ import { User } from '@/constants/types'
 import apiClient from '@/lib/config'
 
 
+// DEPRECATED - no longer used. All auth goes through
+// getUserAndParentFromCommon. Safe to delete in future cleanup.
 export async function authenticateUser(email: string, password: string, parent_org_id: string): Promise<User | null> {
   try {
     // 1. Get user from database
@@ -81,7 +83,8 @@ export async function getUserAndParentFromCommon(email: string, password: string
       last_login: user.last_login,
       parent_org_id: parent.parent_org_id,
       role_id: user.role_id,
-      permissions: user.permissions
+      permissions: user.permissions,
+      org_name: parent.client_name ?? "",
     }
   } catch (error) {
     console.error('Authentication error:', error)

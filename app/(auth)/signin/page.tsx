@@ -47,7 +47,6 @@ function SignInForm() {
       const result = await signIn("credentials", {
         email,
         password,
-        parent_org_id: "null",
         redirect: false,
       });
 
@@ -159,14 +158,13 @@ function SignInForm() {
         flexDirection: "column",
         gap: 4,
       }}>
-        <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-          <Link
-            href="/forgot-password"
-            style={{ color: "var(--color-text-muted)", textDecoration: "none" }}
-          >
-            Forgot password?
-          </Link>
-        </p>
+        <span style={{
+          fontSize: 13,
+          color: "var(--color-text-muted)",
+          cursor: "default",
+        }}>
+          Forgot password? (coming soon)
+        </span>
         <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
           Don't have an account?{" "}
           <Link

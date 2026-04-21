@@ -17,9 +17,13 @@ interface SidebarProps {
 
 export default function Sidebar({ parentOrgId, collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const sessionReady = status === "authenticated";
   const user = session?.user as User | undefined;
   const orgType = user?.org_type ?? "";
+
+  const orgName = user?.org_name ?? parentOrgId ?? "Insiight";
+  const orgInitials = getOrgInitials(orgName);
 
   const {
     campaignItems,
@@ -32,6 +36,15 @@ export default function Sidebar({ parentOrgId, collapsed, onToggle }: SidebarPro
   const initials = user
     ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() || "U"
     : "U";
+
+  function getOrgInitials(name: string): string {
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .map(w => w[0].toUpperCase())
+      .slice(0, 2)
+      .join("");
+  }
 
   return (
     <div
@@ -67,15 +80,32 @@ export default function Sidebar({ parentOrgId, collapsed, onToggle }: SidebarPro
             <div
               className="sidebar-logo-icon"
               style={{
-                width: 22, height: 22, background: "var(--color-text)",
+                width: 22, height: 22,
+                background: sessionReady ? "var(--color-text)" : "var(--color-border)",
                 borderRadius: 5, display: "flex", alignItems: "center",
                 justifyContent: "center", flexShrink: 0,
+                transition: "background 0.2s ease",
               }}
             >
-              <span style={{ fontSize: 9, fontWeight: 800, color: "var(--color-surface)", letterSpacing: "-0.02em" }}>IN</span>
+              <span style={{
+                fontSize: 9, fontWeight: 800,
+                color: "var(--color-surface)",
+                letterSpacing: "-0.02em",
+                opacity: sessionReady ? 1 : 0,
+                transition: "opacity 0.15s ease",
+              }}>
+                {orgInitials}
+              </span>
             </div>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>
-              Insiight
+            <span style={{
+              fontSize: 13, fontWeight: 600,
+              color: "var(--color-text)",
+              letterSpacing: "-0.01em",
+              opacity: sessionReady ? 1 : 0,
+              transition: "opacity 0.15s ease",
+              whiteSpace: "nowrap",
+            }}>
+              {orgName}
             </span>
             <OrgSwitcher collapsed={collapsed} />
           </>

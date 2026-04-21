@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
-import { authenticateUser, getUserAndParentFromCommon, updateLastLogin } from "@/lib/auth"
+import { getUserAndParentFromCommon, updateLastLogin } from "@/lib/auth"
 import { User } from "@/constants/types"
 import jwt from 'jsonwebtoken'
 
@@ -16,27 +16,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        parent_org_id: { label: "Parent Organisation Id", type: "text" }
       },
       async authorize(credentials) {
-        // ⚠️ REMOVE BEFORE DEPLOY — test credentials only
-        if (credentials?.email === "test@test.com" && credentials?.password === "Amplify123!") {
-          return {
-            id: "1",
-            email: "test@test.com",
-            parent_org_id: "test-org",
-            org_type: "media_owner",
-            permissions: [
-              "campaigns:view", "campaigns:create", "campaigns:edit", "campaigns:share",
-              "assets:view", "assets:create", "assets:edit", "assets:share",
-              "plans:view", "plans:create", "plans:edit", "plans:share",
-              "team:view", "team:add_remove",
-              "organisation:view", "organisation:add_remove",
-              "audience_plan:view", "audience_plan:edit"
-            ]
-          }
-        }
-        // ⚠️ END TEST CREDENTIALS
         
         if (!credentials?.email || !credentials?.password) {
           return null
@@ -46,19 +27,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log("Credentials received in authorize:", credentials);
 
-        if (credentials.parent_org_id !== "null") {
-          user = await authenticateUser(
-            credentials.email as string, 
-            credentials.password as string, 
-            credentials.parent_org_id as string
-          )
-        } else {
-          user = await getUserAndParentFromCommon(
-            credentials.email as string, 
-            credentials.password as string
-          )
-          console.log("User found in common db:", user)
-        }
+        user = await getUserAndParentFromCommon(
+          credentials.email as string,
+          credentials.password as string
+        )
 
         if (!user) {
           console.log("Invalid credentials")
@@ -69,13 +41,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("JWT_SECRET environment variable is not defined");
         }
 
+        console.log("User before JWT sign:", JSON.stringify(user, null, 2));
+
         const accessToken = jwt.sign(
-          { 
-            email: user.email, 
-            parent_org_id: credentials.parent_org_id !== "null" ? credentials.parent_org_id : user.parent_org_id, 
-            role_id: user.role.id, 
-            org_id: user.org_id, 
+          {
+            email: user.email,
+            parent_org_id: user.parent_org_id,
+            role_id: user.role.id,
+            org_id: user.org_id,
             user_id: user.id,
+            org_name: (user as any).org_name ?? "",
             permissions: user.permissions,
             org_type: user.org_type
           },
@@ -103,26 +78,49 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return false
       }
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.user = user as User
+        token.user = {
+          ...(user as any),
+          org_name: (user as any).org_name ?? "",
+        }
         console.log("JWT callback user:", user)
+      }
+      // Handle session update triggered by update() in OrgSwitcher
+      if (trigger === "update" && session?.jwt) {
+        // Decode the new JWT and update the token.user with new org context
+        try {
+          const decoded = jwt.verify(
+            session.jwt,
+            process.env.JWT_SECRET as string
+          ) as User;
+          token.user = {
+            ...(token.user as User),
+            jwt: session.jwt,
+            parent_org_id: decoded.parent_org_id,
+            org_id: decoded.org_id,
+            org_name: decoded.org_name,
+            permissions: decoded.permissions,
+          };
+        } catch (err) {
+          console.error("JWT update decode failed:", err);
+        }
       }
       return token
     },
     async session({ session, token }) {
-       if (token && session) {
+      if (token && session) {
+        const tokenUser = token.user as any;
         session.user = {
-          ...token.user as User,
-          emailVerified: null
-        }
+          ...tokenUser,
+          emailVerified: null,
+          org_name: tokenUser.org_name ?? "",
+        } as any;
       }
       return session
     },
   },
   pages: {
-    signIn: '/auth/signin',
-    signOut: '/auth/signout',
-    newUser: '/auth/new-user'
+    signIn: '/signin',
   },
 })

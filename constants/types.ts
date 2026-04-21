@@ -21,7 +21,9 @@ export type User = {
   first_name: string,
   last_name: string,
   role: Role,
+  user_id?: string;
   org_id: string,
+  org_name?: string,
   campaign_name?: string,
   parent_org_id?: string,
   jwt?: string, // Optional JWT token for authentication
