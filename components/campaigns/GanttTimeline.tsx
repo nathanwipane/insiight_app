@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useMemo } from "react";
-import { CampaignType } from "@/constants/types";
+import { CampaignTypeV2 } from "@/constants/types";
 import { STATUS_CONFIG } from "@/components/campaigns/CampaignStatusBadge";
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -28,7 +28,7 @@ function daysBetween(a: Date, b: Date) {
 }
 
 interface GanttTimelineProps {
-  campaigns: CampaignType[];
+  campaigns: CampaignTypeV2[];
   range?: string;
 }
 

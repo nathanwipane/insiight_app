@@ -1,3 +1,4 @@
+// –– app/(console)/[parent_org_id]/dashboard/campaigns/(list)/drafts/page.tsx –––––––––––––––––––––––––––
 "use client";
 
 import { useState, useMemo } from "react";
@@ -5,21 +6,18 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { Search } from "lucide-react";
-import { CampaignType, User } from "@/constants/types";
+import { CampaignTypeV2, User } from "@/constants/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/config";
 import { fetcher } from "@/lib/swrFetchers";
 import { computeCampaignStatus } from "@/lib/campaigns";
 import CampaignsTable from "@/components/campaigns/CampaignsTable";
 import CampaignsTableSkeleton from "@/components/campaigns/CampaignsTableSkeleton";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
-import { SAMPLE_CAMPAIGNS } from "@/lib/testData";
 
 export default function DraftCampaignsPage() {
   const params = useParams();
   const { data: session } = useSession();
   const { hasPermission, hasPermissionsLoaded } = usePermissions();
-  const isTestOrg = useIsTestOrg();
 
   const parentOrgId = params.parent_org_id as string;
   const jwtToken    = (session?.user as User)?.jwt || "";
@@ -27,17 +25,16 @@ export default function DraftCampaignsPage() {
   const [search, setSearch] = useState("");
 
   // ── Data fetching ─────────────────────────────────────────────
-  const shouldFetch = !isTestOrg && jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
+  const shouldFetch = jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
 
-  const { data: campaignData, error, isLoading } = useSWR<{ campaigns: CampaignType[] }>(
-    shouldFetch ? ["/get-all-campaigns", jwtToken] : null,
+  const { data: campaignData, error, isLoading } = useSWR<{ campaigns: CampaignTypeV2[] }>(
+    shouldFetch ? ["/v2/get-all-campaigns", jwtToken] : null,
     fetcher,
     {
       refreshInterval:       3600000,
       revalidateOnFocus:     true,
       revalidateOnReconnect: true,
       errorRetryCount:       3,
-      fallbackData: isTestOrg ? { campaigns: SAMPLE_CAMPAIGNS } : undefined,
     }
   );
 
@@ -53,7 +50,7 @@ export default function DraftCampaignsPage() {
     const q = search.toLowerCase();
     return draftCampaigns.filter(c =>
       c.campaign_name?.toLowerCase().includes(q) ||
-      c.client_name?.toLowerCase().includes(q)
+      c.campaign_alias?.toLowerCase().includes(q)
     );
   }, [draftCampaigns, search]);
 

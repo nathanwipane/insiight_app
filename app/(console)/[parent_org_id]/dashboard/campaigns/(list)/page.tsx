@@ -6,7 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { Plus, Search } from "lucide-react";
-import { CampaignType, User } from "@/constants/types";
+import { CampaignTypeV2, User } from "@/constants/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/config";
 import { fetcher } from "@/lib/swrFetchers";
@@ -16,8 +16,6 @@ import CampaignsTableSkeleton from "@/components/campaigns/CampaignsTableSkeleto
 import CampaignMetricCard from "@/components/campaigns/CampaignMetricCard";
 import GanttTimeline from "@/components/campaigns/GanttTimeline";
 import SelectDropdown from "@/components/ui/SelectDropdown";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
-import { SAMPLE_CAMPAIGNS } from "@/lib/testData";
 
 // ── Constants ─────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -44,9 +42,8 @@ export default function CampaignsPage() {
 
   const parentOrgId = params.parent_org_id as string;
   const jwtToken    = (session?.user as User)?.jwt || "";
-  const isTestOrg   = useIsTestOrg();
 
-  const [editCampaign, setEditCampaign] = useState<CampaignType | null>(null);
+  const [editCampaign, setEditCampaign] = useState<CampaignTypeV2 | null>(null);
   const [isModalOpen, setIsModalOpen]   = useState(false);
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -64,17 +61,16 @@ export default function CampaignsPage() {
   }, [searchParams, isModalOpen]);
 
   // ── Data fetching ─────────────────────────────────────────────
-  const shouldFetch = !isTestOrg && jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
+  const shouldFetch = jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
 
-  const { data: campaignData, error, isLoading, mutate } = useSWR<{ campaigns: CampaignType[] }>(
-    shouldFetch ? ["/get-all-campaigns", jwtToken] : null,
+  const { data: campaignData, error, isLoading, mutate } = useSWR<{ campaigns: CampaignTypeV2[] }>(
+    shouldFetch ? ["/v2/get-all-campaigns", jwtToken] : null,
     fetcher,
     {
       refreshInterval:      3600000,
       revalidateOnFocus:    true,
       revalidateOnReconnect: true,
       errorRetryCount:      3,
-      fallbackData: isTestOrg ? { campaigns: SAMPLE_CAMPAIGNS } : undefined,
     }
   );
 
@@ -86,7 +82,7 @@ export default function CampaignsPage() {
 
   // ── Metrics ───────────────────────────────────────────────────
   const totalImpressions = useMemo(() =>
-    allCampaigns.reduce((a, c) => a + (c.impressions_achieved || 0), 0),
+    allCampaigns.reduce((a, c) => a + (c.total_impressions || 0), 0),
     [allCampaigns]
   );
 
@@ -104,7 +100,7 @@ export default function CampaignsPage() {
     const withTarget = allCampaigns.filter(c => c.impressions_target > 0);
     if (!withTarget.length) return 0;
     return Math.round(
-      withTarget.reduce((a, c) => a + Math.min((c.impressions_achieved / c.impressions_target) * 100, 200), 0)
+      withTarget.reduce((a, c) => a + Math.min((c.total_impressions / c.impressions_target) * 100, 200), 0)
       / withTarget.length
     );
   }, [allCampaigns]);
@@ -123,7 +119,7 @@ export default function CampaignsPage() {
     return allCampaigns.filter(c => {
       const matchSearch = !search ||
         c.campaign_name?.toLowerCase().includes(search.toLowerCase()) ||
-        c.client_name?.toLowerCase().includes(search.toLowerCase());
+        c.campaign_alias?.toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "all" || computeCampaignStatus(c) === statusFilter;
       const matchDate   = !since || new Date(c.end_date) >= since;
       return matchSearch && matchStatus && matchDate;

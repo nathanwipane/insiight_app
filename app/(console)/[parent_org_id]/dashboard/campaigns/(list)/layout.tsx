@@ -1,3 +1,4 @@
+// –– app/(console)/[parent_org_id]/dashboard/campaigns/(list)/layout.tsx –––––––––––––––––––––––––––
 "use client";
 
 import { usePathname, useParams, useRouter } from "next/navigation";
@@ -8,9 +9,7 @@ import { useSession } from "next-auth/react";
 import { User } from "@/constants/types";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
-import { SAMPLE_CAMPAIGNS } from "@/lib/testData";
-import { CampaignType } from "@/constants/types";
+import { CampaignTypeV2 } from "@/constants/types";
 import { computeCampaignStatus } from "@/lib/campaigns";
 
 export default function CampaignsLayout({ children }: { children: React.ReactNode }) {
@@ -19,23 +18,21 @@ export default function CampaignsLayout({ children }: { children: React.ReactNod
   const router      = useRouter();
   const { data: session } = useSession();
   const { hasPermission, hasPermissionsLoaded } = usePermissions();
-  const isTestOrg   = useIsTestOrg();
 
   const parentOrgId = params.parent_org_id as string;
   const jwtToken    = (session?.user as User)?.jwt || "";
 
   // ── Data fetching (for draft count badge) ─────────────────────
-  const shouldFetch = !isTestOrg && jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
+  const shouldFetch = jwtToken && hasPermissionsLoaded && hasPermission(PERMISSIONS.CAMPAIGNS_VIEW);
 
-  const { data: campaignData } = useSWR<{ campaigns: CampaignType[] }>(
-    shouldFetch ? ["/get-all-campaigns", jwtToken] : null,
+  const { data: campaignData } = useSWR<{ campaigns: CampaignTypeV2[] }>(
+    shouldFetch ? ["/v2/get-all-campaigns", jwtToken] : null,
     fetcher,
     {
       refreshInterval:       3600000,
       revalidateOnFocus:     true,
       revalidateOnReconnect: true,
       errorRetryCount:       3,
-      fallbackData: isTestOrg ? { campaigns: SAMPLE_CAMPAIGNS } : undefined,
     }
   );
 

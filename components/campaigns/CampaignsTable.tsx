@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowUpDown, ArrowUp, ArrowDown, BarChart2, Pencil } from "lucide-react";
-import { CampaignType } from "@/constants/types";
+import { CampaignTypeV2 } from "@/constants/types";
 import CampaignStatusBadge from "@/components/campaigns/CampaignStatusBadge";
 import EditCampaignModal from "@/components/campaigns/EditCampaignModal";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -30,20 +30,20 @@ import {
 const COL_WIDTHS: Record<string, string> = {
   campaign_name:       "27%",
   computed_status:     "10%",
-  client_name:         "16%",
+  campaign_alias:      "16%",
   progress_percentage: "20%",
-  impressions_achieved:"11%",
+  total_impressions:   "11%",
   start_date:          "10%",
   actions:             "6%",
 };
 
 // ── Column helper ─────────────────────────────────────────────────
-const columnHelper = createColumnHelper<CampaignType & { computed_status: string; progress_percentage: number }>();
+const columnHelper = createColumnHelper<CampaignTypeV2 & { computed_status: string; progress_percentage: number }>();
 
 // ── Props ─────────────────────────────────────────────────────────
 interface CampaignsTableProps {
-  allCampaigns: CampaignType[];
-  onEdit?: (campaign: CampaignType) => void;
+  allCampaigns: CampaignTypeV2[];
+  onEdit?: (campaign: CampaignTypeV2) => void;
   disableDimming?: boolean;
   isDraftsTable?: boolean;
 }
@@ -56,7 +56,7 @@ export default function CampaignsTable({ allCampaigns, onEdit, disableDimming, i
 
   const [sorting, setSorting]       = useState<SortingState>([]);
   const [modalOpen, setModalOpen]           = useState(false);
-  const [modalCampaign, setModalCampaign]   = useState<CampaignType | null>(null);
+  const [modalCampaign, setModalCampaign]   = useState<CampaignTypeV2 | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 20 });
 
   // Enrich with computed fields
@@ -93,11 +93,11 @@ export default function CampaignsTable({ allCampaigns, onEdit, disableDimming, i
     }),
 
     // ── Client ──────────────────────────────────────────────────
-    columnHelper.accessor("client_name", {
+    columnHelper.accessor("campaign_alias", {
       header: "Client",
-      cell: ({ getValue, row }) => (
+      cell: ({ getValue }) => (
         <span style={{ fontSize: 12, color: "var(--color-text)" }}>
-          {getValue() || row.original.organisation_name || "—"}
+          {getValue() || "—"}
         </span>
       ),
     }),
@@ -107,7 +107,7 @@ export default function CampaignsTable({ allCampaigns, onEdit, disableDimming, i
       header: "Progress",
       cell: ({ getValue, row }) => {
         const pct      = getValue();
-        const achieved = row.original.impressions_achieved;
+        const achieved = row.original.total_impressions;
         const target   = row.original.impressions_target || row.original.projected_impressions;
         if (!target) return <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>—</span>;
         const over = (achieved ?? 0) > target;
@@ -126,7 +126,7 @@ export default function CampaignsTable({ allCampaigns, onEdit, disableDimming, i
     }),
 
     // ── Impressions ─────────────────────────────────────────────
-    columnHelper.accessor("impressions_achieved", {
+    columnHelper.accessor("total_impressions", {
       header: "Impressions",
       cell: ({ getValue }) => (
         <span style={{ fontSize: 12, fontWeight: 500, color: getValue() ? "var(--color-text)" : "var(--color-text-secondary)", fontVariantNumeric: "tabular-nums" }}>

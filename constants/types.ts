@@ -60,6 +60,40 @@ export type DemographicData = {
 
 }
 
+export type CampaignTypeV2 = {
+  // Core details from hm_b_campaign_details
+  campaign_id: string;
+  campaign_name: string;
+  campaign_alias: string | null;
+  org_id: string;
+  advertiser_id: string | null;
+  agency_id: string | null;
+  start_date: string;
+  end_date: string;
+  status: 'draft' | 'scheduled' | 'active' | 'completed';
+  asset_ids: string[];
+  creative_ids: string[];
+  regions: string[];
+  description: string | null;
+  goals: string | null;
+  target_audiences: string | null;
+  impressions_target: number;
+  projected_impressions: number;
+  projected_reach: number;
+  last_processed_date: string | null;
+  created_at: string;
+  last_updated: string | null;
+  // Metrics from hm_b_campaign_summary
+  total_impressions: number;
+  reach: number;
+  frequency: number;
+  total_ad_plays: number;
+  days_active: number;
+  total_assets: number;
+  first_play_date: string | null;
+  last_play_date: string | null;
+};
+
 export type CampaignType = {
     campaign_id: string;
     client_name: string;
