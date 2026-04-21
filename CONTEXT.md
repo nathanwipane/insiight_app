@@ -10,8 +10,8 @@ All components live under `components/`. Every client component is marked `"use 
 
 ### `components/layout/`
 - `DashboardShell.tsx` — client — wraps dashboard pages; mounts Sidebar + TopBar + main, owns sidebar collapse state.
-- `Sidebar.tsx` — client — fixed left rail (52 / 224 px). Logo, `<OrgSwitcher>`, nav items, user avatar, sign-out.
-- `OrgSwitcher.tsx` — client — **new**. Superadmin-only org dropdown. Hidden when sidebar is collapsed.
+- `Sidebar.tsx` — client — fixed left rail (52 / 224 px). Logo with dynamic org initials + name, `<OrgSwitcher>`, nav items, user avatar, sign-out.
+- `OrgSwitcher.tsx` — client — superadmin-only org dropdown. Hidden when sidebar is collapsed.
 - `TopBar.tsx` — client — breadcrumb row derived from URL segments.
 
 ### `components/auth/`
@@ -126,7 +126,17 @@ Imported in `app/layout.tsx`:
 
 ---
 
-## 3. Auth setup
+## 3. Auth Flow
+
+- All users authenticate via a single global signin page at `/signin`.
+- Branch B (org-specific tenant login) has been removed entirely.
+- `authenticateUser()` in `lib/auth.ts` is deprecated, not called anywhere.
+- All auth goes through `getUserAndParentFromCommon()` → `sm_common_users`.
+- JWT payload includes: `email`, `parent_org_id`, `role_id`, `org_id`, `user_id`, `org_name`, `permissions`, `org_type`.
+- JWT expiry: **5h hard, no refresh**.
+- NextAuth `pages` config: `signIn → /signin` only.
+- Org boundary check lives in `app/(console)/[parent_org_id]/dashboard/layout.tsx`.
+- `jwt` callback handles `trigger === "update"` for org switching — decodes the new JWT and merges `parent_org_id`, `org_id`, `org_name`, `permissions`, and the new `jwt` back into `token.user`.
 
 ### Stack
 - **NextAuth v5 beta** (`next-auth@5.0.0-beta.30`).
@@ -135,17 +145,10 @@ Imported in `app/layout.tsx`:
 - Per-tenant backend DB: `insiight_{parent_org_id}_db`.
 
 ### Entry points
-- `proxy.ts` — `export { auth as proxy } from "@/lib/authOptions"`; matcher excludes `/api`, `/_next/static`, `/_next/image`, `/favicon.ico`, `/signin`, `/register`.
+- `proxy.ts` — matcher excludes `/api`, `/_next/static`, `/_next/image`, `/favicon.ico`, `/signin`, `/register`.
 - `lib/authOptions.ts` — NextAuth config: Credentials + Google providers, JWT signing, callbacks.
 - `app/api/auth/[...nextauth]/route.ts` — handler re-export (`GET`, `POST`).
 - `components/providers/AuthProvider.tsx` — wraps app in `SessionProvider`.
-
-### JWT (`lib/authOptions.ts:72-84`)
-Signed with `JWT_SECRET`. Payload:
-```ts
-{ email, parent_org_id, role_id, org_id, user_id, permissions, org_type }
-```
-Lifetime: **5h hard expiry**, no refresh. Session `sessionExpires = Date.now() + 5h`.
 
 ### Role → permissions (`constants/config.ts`)
 Permission catalog:
@@ -165,7 +168,7 @@ Roles: Superadmin / Media Owner Admin (both full), Media Owner User, Media Agenc
 - `hooks/usePermissionsBasedNavigation.ts` — filters sidebar items.
 
 ### Org boundary
-Enforced in exactly one place — `app/(console)/[parent_org_id]/dashboard/layout.tsx:38-71`:
+Enforced in exactly one place — `app/(console)/[parent_org_id]/dashboard/layout.tsx`:
 ```ts
 const decoded = jwt.verify(user.jwt, process.env.JWT_SECRET as string);
 if (decoded.exp < currentTime || decoded.parent_org_id !== parent_org_id) {
@@ -176,44 +179,62 @@ Sibling `(console)` routes outside `/dashboard` do not re-validate.
 
 ---
 
-## 4. Org switcher plan
+## 4. Org Switcher
 
-### Files
-- **New:** `components/layout/OrgSwitcher.tsx` (client).
-- **Modified:** `components/layout/Sidebar.tsx` — imports and renders `<OrgSwitcher collapsed={collapsed} />` between the logo block and the `PanelLeft` toggle.
-- **Modified:** `.env.local` — added `NEXT_PUBLIC_API_BASE_URL` (client needs it for the JWT-swap fetch).
-
-### Flow
-1. Gate: render only if `session.user.role_id === 1` (superadmin) **and** sidebar is expanded.
-2. Fetch: `useSWR(["/get-all-organisations", token], fetcher)` — list of `{ parent_org_id, organisation_name, logo? }`.
-3. On select:
-   - `POST ${NEXT_PUBLIC_API_BASE_URL}/create-jwt-token` with body `{ parent_org_id }` and the current JWT as Bearer.
-   - `await update({ jwt: data.token })` on the NextAuth session.
-   - `router.push(`/${orgId}/dashboard`)`.
-4. Outside-click closes dropdown (mousedown listener on `document`).
-
-### Backend contract assumed
-- `GET /get-all-organisations` returns `Organisation[]` for superadmin.
-- `POST /create-jwt-token` accepts `{ parent_org_id }` + superadmin Bearer and returns `{ token }` scoped to the target org. **Not verified — needs backend confirmation before use.**
-
-### Known defects in `OrgSwitcher.tsx`
-- `currentOrg` assigned but unused.
-- `style={{ … truncate: true }}` — `truncate` is not a CSS property (likely wants `overflow: "hidden"`, `textOverflow: "ellipsis"`, `whiteSpace: "nowrap"`, or a `className="truncate"`).
+- **Superadmin only** (`role_id === 1`); hidden when sidebar is collapsed.
+- Fetches org list from `GET /v2/get-all-organisations` via shared SWR key `["/v2/get-all-organisations", token]` (Sidebar's org-name lookup reuses the same key → no extra request).
+- Renders **active orgs** as clickable rows; **inactive orgs** aggregated into a single greyed "_N inactive organisation(s)_" label at the bottom.
+- Dropdown opens to the **right of the chevron** (`position: fixed`, `z-index: 9999`) so it escapes the sidebar's `overflow: hidden`.
+- On switch:
+  - `POST /v2/create-jwt-token` with body `{ email, parent_org_id, role_id, org_id, user_id, permissions, org_name }` and the current JWT as Bearer.
+  - Response `{ status: true, data: { access_token: "..." } }`.
+  - Calls NextAuth `update({ jwt: data.data.access_token })` → the `jwt` callback's `trigger === "update"` path merges the decoded payload into `token.user`.
+  - **Hard navigates via `window.location.href = '/${orgId}/dashboard'`** so the new session cookie is read server-side before the layout runs.
+- Org name + 2-letter initials shown in the Sidebar header come from `session.user.org_name`, embedded in the JWT by `authorize()` on sign-in and refreshed on switch.
 
 ---
 
-## 5. Pending work items
+## 5. v2 API Endpoints
+
+- **`GET /v2/get-all-organisations`** → `controllers_v2/Organisations/getAllOrganisationsV2.js` (in `insiight_web_api`).
+  - Queries `insiight_clients.sm_clients_info`, excludes `client_id = 'insiight'`.
+  - Returns: `{ status: true, data: Organisation[] }` where `Organisation = { id, client_id, client_name, logo?, status?, db_name? }`.
+
+- **`POST /v2/create-jwt-token`** → `controllers_v2/Authentication/createJwtTokenV2.js` (in `insiight_web_api`).
+  - Body: `{ email, parent_org_id, role_id, org_id, user_id, permissions, org_name }`.
+  - Returns: `{ status: true, data: { access_token, token_type, payload, message } }`.
+  - **Note:** no expiry on tokens issued by this endpoint — diverges from the 5h expiry of sign-in-minted JWTs.
+
+---
+
+## 6. Deleted / Deprecated
+
+- `app/(console)/[parent_org_id]/auth/` — **deleted** (was all stubs: `layout.tsx`, `forgot-password/page.tsx`, `reset-password/page.tsx`, `signup/page.tsx`, plus a previously-deleted `signin/page.tsx`).
+- `authenticateUser()` in `lib/auth.ts` — **deprecated**, safe to delete. Marked with a `// DEPRECATED` comment; no call sites remain.
+- Branch B (org-specific credential login) — **removed** from `authOptions.ts`: the `parent_org_id` credential field, the `if/else` branch, and the `authenticateUser` import are all gone.
+- NextAuth `pages.signOut` / `pages.newUser` — **removed**; only `signIn: '/signin'` remains.
+- Forgot-password link on the signin page — **disabled**; now a non-clickable "Forgot password? (coming soon)" span.
+
+---
+
+## 7. Pending Work
 
 ### Must-fix before deploy
-1. **Hardcoded test credentials** — `lib/authOptions.ts:21-38`. `test@test.com` / `Amplify123!` with full permissions. Delete.
-2. **`JWT_SECRET` / `NEXTAUTH_SECRET`** — committed in `.env.local`. Rotate and move to secret manager.
-3. **Google OAuth provider** — wired in `lib/authOptions.ts:10-13` but `signIn` callback returns `false` for non-credentials at line 100. Either implement or remove.
+1. **Hardcoded test credentials** — `lib/authOptions.ts:21-38`. `test@test.com` / `Amplify123!` with full permissions. Delete before any public deploy.
+2. **`JWT_SECRET` / `NEXTAUTH_SECRET`** — committed in `.env.local`. Rotate and move to a secret manager.
+3. **Google OAuth provider** — wired in `lib/authOptions.ts` but the `signIn` callback returns `false` for non-credentials. Either implement or remove.
+
+### New / follow-up
+4. **Forgot password flow** — global `/forgot-password` route not built; signin page currently shows "coming soon" placeholder.
+5. **Registration email verification** — `app/(auth)/register/create-profile/page.tsx:140` fetches `/api/auth/decode-verification-token`, which doesn't exist in the repo.
+6. **`org_type` not in v2 JWT** — `createJwtTokenV2` does not sign `org_type` into the token, so switching orgs drops it from `session.user.org_type`. Sign-in-minted tokens still have it.
+7. **`authenticateUser()` cleanup** — deprecated; delete after confirming no external references.
+8. **Server-side permission enforcement** — all RBAC is still client-side (`usePermissions` / `PermissionGuard`). Backend must validate independently.
+9. **JWT refresh / session extension** — no refresh token flow; users are bounced to `/signin` after 5h (or whenever a sign-in-minted token expires; v2 tokens have no expiry by contrast).
 
 ### Structural gaps
-4. **No server-side permission validation.** All permission logic is client-side; backend must enforce independently.
-5. **No JWT refresh.** 5h hard expiry → user bounced to signin.
-6. **Org boundary check only in `/dashboard`.** Other `(console)/[parent_org_id]/*` routes (campaigns, settings, etc.) don't re-validate.
-7. **NextAuth session type not augmented** — no `types/next-auth.d.ts`; access to `user.jwt`, `permissions`, etc. is via casts.
+10. **Org boundary check only in `/dashboard`** — other `(console)/[parent_org_id]/*` routes (campaigns, settings, etc.) don't re-validate.
+11. **NextAuth session type not augmented** — no `types/next-auth.d.ts`; access to `user.jwt`, `permissions`, `org_name`, etc. is via `as any` / `as User` casts.
 
 ### Port-forwards from prior project (`app/(console)/[parent_org_id]/dashboard/layout.tsx:8-18`)
 - `TourWrapper`, `WelcomeModalProvider`, `DemoProvider` / `DemoAutoLogin` / `DemoCredentialsWrapper` / `DemoBanner`, `PoweredByInsiight`.
@@ -226,19 +247,21 @@ Sibling `(console)` routes outside `/dashboard` do not re-validate.
 - Dashboard variants (`AgencyDashboard`, `BrandDashboard`, `MediaOwnerDashboard`) all return `null`.
 
 ### Code quality
-- ESLint: ~60 problems (31 errors, ~28 warnings). Clusters: `no-explicit-any` (`lib/database.ts`, `lib/linkedIn.ts`, `lib/metaPixel.ts`, `hooks/usePermissionsBasedNavigation.ts`), `prefer-const`, unused vars (`axios`, `getUserByEmail`, `userReal`, `res`, `title`, `collapsed`), `no-wrapper-object-types` (`lib/users.ts`).
+- ESLint: ~60 problems (errors + warnings). Clusters: `no-explicit-any`, `prefer-const`, unused vars, `no-wrapper-object-types`.
 - TypeScript `tsc --noEmit`: clean.
 
 ---
 
-## 6. Key architectural decisions
+## 8. Key architectural decisions
 
 - **Next 16 conventions.** `proxy.ts` replaces `middleware.ts`; read `node_modules/next/dist/docs/` before writing Next code (per `AGENTS.md`).
-- **Flat multi-tenancy.** Route param is `[parent_org_id]` but there's no parent/child hierarchy — it's a tenant slug, generated from org name via `lib/utils.ts` (first 8 alphabetic chars, lowercased). Each tenant has its own backend DB.
+- **Flat multi-tenancy.** Route param is `[parent_org_id]` but there's no parent/child hierarchy — it's a tenant slug generated from org name via `lib/utils.ts`. Each tenant has its own backend DB.
 - **External backend as source of truth.** No Prisma, no Supabase, no migrations in-repo. All CRUD goes through `https://api.insiightanalytics.com/api` with JWT Bearer auth.
-- **JWT-embedded permissions.** Permissions travel in the token payload rather than being re-fetched per request. Cheap reads, stale on role change until re-login.
+- **JWT-embedded permissions + org_name.** Identity and org context travel in the token payload rather than being re-fetched per request. Cheap reads; stale on role/name change until re-login or org-switch.
 - **Client-side RBAC, server-side trust required.** UI gates via `usePermissions` / `PermissionGuard`; enforcement is the backend's job.
 - **Styling split.** Tailwind for layout utilities; inline `style` objects using CSS custom properties for anything themeable. Keeps components dark-mode-ready even though dark mode isn't implemented.
-- **SWR for client data.** Shared `fetcher` in `lib/swrFetchers.ts`; keys use `[url, token]` tuples so auth changes invalidate cache.
-- **Credentials-only auth (effectively).** Google provider configured but disabled in callback — only email + password via bcrypt (12 rounds) against the backend.
+- **SWR for client data.** Shared `fetcher` in `lib/swrFetchers.ts`; keys use `[url, token]` tuples so auth changes invalidate cache and different consumers share one request.
+- **Credentials-only auth (effectively).** Google provider configured but disabled in the `signIn` callback — only email + password via bcrypt against the backend.
+- **Single global signin.** `/signin` is the one entry point; tenant-specific auth routes have been deleted.
+- **Org-switch uses hard navigation.** After `update({ jwt })`, we `window.location.href = '/${orgId}/dashboard'` so the new session cookie is picked up server-side before the layout's boundary check runs.
 - **Org boundary enforced at layout level, not middleware.** The `proxy.ts` matcher only checks "is there a session"; the `parent_org_id` match check lives in `app/(console)/[parent_org_id]/dashboard/layout.tsx`.
