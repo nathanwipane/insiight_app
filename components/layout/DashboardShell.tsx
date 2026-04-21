@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
@@ -14,8 +15,20 @@ export default function DashboardShell({
   parentOrgId: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const { data: session, status } = useSession();
 
   useTokenRefresh();
+
+  if (status === "loading") {
+    return (
+      <div style={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        background: "var(--color-bg)",
+      }} />
+    );
+  }
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--color-surface)" }}>
