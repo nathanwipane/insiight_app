@@ -55,11 +55,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             org_type: user.org_type
           },
           process.env.JWT_SECRET as string,
-          { expiresIn: '5h' }
+          { expiresIn: '8h' }
         )
-        
+
         user.jwt = accessToken
-        user.sessionExpires = Date.now() + 5 * 60 * 60 * 1000
+        user.sessionExpires = Date.now() + 8 * 60 * 60 * 1000
         return user
       }
     })
@@ -69,7 +69,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       try {
         let userReal = user as User
         if (account?.provider === "credentials") {
-          await updateLastLogin(userReal.jwt as string)
+          // Fire and forget — don't block sign-in on this call
+          updateLastLogin(userReal.jwt as string).catch(err =>
+            console.error('updateLastLogin failed silently:', err)
+          );
           return true
         }
         return false
@@ -102,6 +105,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             org_name: decoded.org_name,
             permissions: decoded.permissions,
           };
+          (token.user as any).sessionExpires = Date.now() + 8 * 60 * 60 * 1000;
         } catch (err) {
           console.error("JWT update decode failed:", err);
         }

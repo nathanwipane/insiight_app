@@ -50,22 +50,21 @@ function SignInForm() {
         redirect: false,
       });
 
-      if (result?.error) {
-        setError("Invalid email or password.");
-        setIsLoading(false);
-        return;
-      }
-
-      // Sign-in succeeded — redirect directly
-      setRedirecting(true);
-      const user = session?.user as User;
-      if (user?.parent_org_id) {
-        router.replace(`/${user.parent_org_id}/dashboard`);
+      if (result?.ok) {
+        setRedirecting(true);
+        // Fetch session to get parent_org_id
+        const session = await fetch('/api/auth/session');
+        const data = await session.json();
+        const parentOrgId = data?.user?.parent_org_id;
+        if (parentOrgId) {
+          window.location.href = `/${parentOrgId}/dashboard`;
+        } else {
+          window.location.href = '/';
+        }
       } else {
-        router.refresh(); // fallback if session hasn't updated yet
+        setError("Invalid email or password");
+        setIsLoading(false);
       }
-
-      // The useEffect watching session will handle the redirect once the session updates
     } catch {
       setError("Something went wrong. Please try again.");
       setIsLoading(false);

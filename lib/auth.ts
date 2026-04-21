@@ -46,7 +46,9 @@ export async function authenticateUser(email: string, password: string, parent_o
 
 export const updateLastLogin = async (jwtToken: string): Promise<void> => {
   try {
-    let res = await apiClient.put(`/update-user-login`, {} ,{headers: { Authorization: `Bearer ${jwtToken}` }})
+    let res = await apiClient.put(`/v2/update-user-login`, {} ,{
+      headers: { Authorization: `Bearer ${jwtToken}` }
+    })
   } catch (error) {
     console.error('Error updating last login:', error)
   }

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 export default function DashboardShell({
   children,
@@ -13,6 +14,8 @@ export default function DashboardShell({
   parentOrgId: string;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  useTokenRefresh();
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--color-surface)" }}>

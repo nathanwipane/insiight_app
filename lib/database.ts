@@ -41,7 +41,7 @@ export const getUserByEmailWithPermissions = async (email_id: string, org_id: st
 
 export const getUserFromCommon = async (email_id: string) => {
     try { 
-        const response = await apiClient.get('/get-user-and-parent-org', {
+        const response = await apiClient.get('/v2/get-user-and-parent-org', {
             params: { email_id }
         });
         const user = response.data.data.user;
