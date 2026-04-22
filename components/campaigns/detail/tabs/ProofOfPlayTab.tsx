@@ -4,24 +4,29 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { Image as ImageIcon, Calendar, MapPin } from "lucide-react";
-import { User, ProofOfPlayImage } from "@/constants/types";
+import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
 
-// ── Sample data ───────────────────────────────────────────────────
-const SAMPLE_POPS: ProofOfPlayImage[] = [
-  { id: 1, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 1 · Morning run", description: "Brisbane CBD · Route A", time_uploaded: "2026-02-02T08:00:00Z" },
-  { id: 2, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 2 · Afternoon shift", description: "Sydney Inner West · Route C", time_uploaded: "2026-02-03T14:30:00Z" },
-  { id: 3, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 3 · Evening run", description: "Melbourne CBD · Route B", time_uploaded: "2026-02-04T18:00:00Z" },
-  { id: 4, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 7 · Peak hour", description: "Perth CBD · Route D", time_uploaded: "2026-02-08T17:00:00Z" },
-  { id: 5, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 12 · Weekend", description: "Adelaide · Route A", time_uploaded: "2026-02-13T11:00:00Z" },
-  { id: 6, campaign_id: "cmp-a1b2c3", asset_id: null, url: "", title: "Day 20 · Night run", description: "Sydney CBD · Route E", time_uploaded: "2026-02-21T20:00:00Z" },
-];
+type PopV2 = {
+  id: number;
+  campaign_id: string;
+  asset_id: string | null;
+  url: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  captured_at: string | null;
+  time_uploaded: string;
+};
 
-function PopCard({ pop }: { pop: ProofOfPlayImage }) {
-  const date = new Date(pop.time_uploaded).toLocaleDateString("en-AU", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
+function PopCard({ pop }: { pop: PopV2 }) {
+  const dateStr = pop.captured_at ?? pop.time_uploaded;
+  const date = dateStr
+    ? new Date(dateStr).toLocaleDateString("en-AU", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
+      })
+    : "";
+  const locationText = pop.location ?? pop.description;
 
   return (
     <div style={{
@@ -54,14 +59,18 @@ function PopCard({ pop }: { pop: ProofOfPlayImage }) {
         <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text)", marginBottom: 4 }}>
           {pop.title}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 3 }}>
-          <MapPin size={9} />
-          {pop.description}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--color-text-muted)" }}>
-          <Calendar size={9} />
-          {date}
-        </div>
+        {locationText && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 3 }}>
+            <MapPin size={9} />
+            {locationText}
+          </div>
+        )}
+        {date && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "var(--color-text-muted)" }}>
+            <Calendar size={9} />
+            {date}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -84,18 +93,17 @@ export default function ProofOfPlayTab() {
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
   const token      = (session?.user as User)?.jwt ?? "";
-  const isTestOrg  = useIsTestOrg();
 
-  const shouldFetch = !isTestOrg && !!token && !!campaignId;
+  const shouldFetch = !!token && !!campaignId;
 
-  const { data: pops, isLoading } = useSWR<ProofOfPlayImage[]>(
-    shouldFetch ? [`/get-campaign-pops/${campaignId}`, token] : null,
+  const { data: pops, isLoading } = useSWR<PopV2[]>(
+    shouldFetch ? [`/v2/campaign/${campaignId}/pops`, token] : null,
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
 
-  const images  = isTestOrg ? SAMPLE_POPS : (pops ?? []);
-  const loading = !isTestOrg && isLoading;
+  const images  = pops ?? [];
+  const loading = isLoading;
 
   return (
     <div style={{

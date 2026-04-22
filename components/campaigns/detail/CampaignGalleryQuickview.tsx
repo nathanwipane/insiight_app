@@ -4,19 +4,19 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { Image as ImageIcon, ArrowRight } from "lucide-react";
-import { User, ProofOfPlayImage } from "@/constants/types";
+import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
 
-// ── Sample data ───────────────────────────────────────────────────
-const SAMPLE_POP: ProofOfPlayImage = {
-  id: 1,
-  campaign_id: "cmp-a1b2c3",
-  asset_id: null,
-  url: "",
-  title: "Day 1 · Morning run",
-  description: "Brisbane CBD · Route A",
-  time_uploaded: "2026-02-02T08:00:00Z",
+type PopV2 = {
+  id: number;
+  campaign_id: string;
+  asset_id: string | null;
+  url: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  captured_at: string | null;
+  time_uploaded: string;
 };
 
 interface CampaignGalleryQuickviewProps {
@@ -28,18 +28,18 @@ export default function CampaignGalleryQuickview({ onViewAll }: CampaignGalleryQ
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
   const token      = (session?.user as User)?.jwt ?? "";
-  const isTestOrg  = useIsTestOrg();
 
-  const shouldFetch = !isTestOrg && !!token && !!campaignId;
+  const shouldFetch = !!token && !!campaignId;
 
-  const { data: pops, isLoading } = useSWR<ProofOfPlayImage[]>(
-    shouldFetch ? [`/get-campaign-pops/${campaignId}?count=1`, token] : null,
+  const { data: pops, isLoading } = useSWR<PopV2[]>(
+    shouldFetch ? [`/v2/campaign/${campaignId}/pops?limit=1`, token] : null,
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
 
-  const latest  = isTestOrg ? SAMPLE_POP : pops?.[0];
-  const loading = !isTestOrg && isLoading;
+  const latest  = pops?.[0];
+  const loading = isLoading;
+  const caption = latest?.location ?? latest?.description;
 
   return (
     <div style={{
@@ -111,7 +111,9 @@ export default function CampaignGalleryQuickview({ onViewAll }: CampaignGalleryQ
             padding: "24px 16px 12px",
           }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: "#fff" }}>{latest.title}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{latest.description}</div>
+            {caption && (
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{caption}</div>
+            )}
           </div>
         )}
       </div>
