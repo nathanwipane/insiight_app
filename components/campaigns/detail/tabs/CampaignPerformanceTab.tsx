@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { MapPin } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
@@ -63,6 +64,8 @@ function MapPlaceholder() {
   );
 }
 
+type HourlyRow = { hour: number; impressions: number; ad_plays: number };
+
 // ── Main component ────────────────────────────────────────────────
 export default function CampaignPerformanceTab() {
   const params      = useParams();
@@ -77,6 +80,21 @@ export default function CampaignPerformanceTab() {
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
+
+  const { data: hourlyData, isLoading: hourLoading } = useSWR<HourlyRow[]>(
+    shouldFetch ? [`/v2/campaign/${campaignId}/hourly`, token] : null,
+    fetcher,
+    { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
+  );
+
+  const hourChartData = useMemo(() => {
+    if (!hourlyData) return [];
+    // Ensure all 24 hours are represented even if some have 0 impressions
+    return Array.from({ length: 24 }, (_, i) => {
+      const row = hourlyData.find(r => r.hour === i);
+      return { h: String(i), v: row?.impressions ?? 0 };
+    });
+  }, [hourlyData]);
 
   const suburbItems = useMemo(() => {
     if (!suburbsData) return [];
@@ -127,14 +145,49 @@ export default function CampaignPerformanceTab() {
           noPadding
           bodyStyle={{ padding: "16px 20px", height: 240 }}
         >
-          <div style={{
-            height: "100%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexDirection: "column", gap: 8,
-            color: "var(--color-text-muted)",
-          }}>
-            <span style={{ fontSize: 11 }}>Time of day data coming soon</span>
-          </div>
+          {hourLoading ? (
+            <div style={{
+              height: 192,
+              background: "var(--color-border)",
+              borderRadius: 4,
+              animation: "pulse 1.5s ease-in-out infinite"
+            }} />
+          ) : (
+            <div style={{ height: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={hourChartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="var(--color-text)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="var(--color-text)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" vertical={false} />
+                  <XAxis
+                    dataKey="h"
+                    tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                  />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke="var(--color-text)"
+                    strokeWidth={1.5}
+                    fill="url(#hourGrad)"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </SectionCard>
       </div>
     </div>
