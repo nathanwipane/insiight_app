@@ -7,27 +7,10 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { User, TimeseriesData } from "@/constants/types";
+import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
 
-// ── Sample timeseries ─────────────────────────────────────────────
-const SAMPLE_TIMESERIES: TimeseriesData[] = [
-  { date: "2026-03-01", total_impressions: 148000, total_reach: 24600 },
-  { date: "2026-03-03", total_impressions: 162000, total_reach: 26800 },
-  { date: "2026-03-05", total_impressions: 189000, total_reach: 31200 },
-  { date: "2026-03-07", total_impressions: 174000, total_reach: 28900 },
-  { date: "2026-03-09", total_impressions: 201000, total_reach: 33400 },
-  { date: "2026-03-11", total_impressions: 218000, total_reach: 36200 },
-  { date: "2026-03-13", total_impressions: 195000, total_reach: 32400 },
-  { date: "2026-03-15", total_impressions: 232000, total_reach: 38600 },
-  { date: "2026-03-17", total_impressions: 256000, total_reach: 42600 },
-  { date: "2026-03-19", total_impressions: 241000, total_reach: 40100 },
-  { date: "2026-03-21", total_impressions: 278000, total_reach: 46200 },
-  { date: "2026-03-23", total_impressions: 264000, total_reach: 43900 },
-  { date: "2026-03-25", total_impressions: 289000, total_reach: 48100 },
-  { date: "2026-03-27", total_impressions: 312000, total_reach: 51900 },
-];
+type TimeseriesRowV2 = { play_date: string; impressions: number; reach: number; ad_plays: number };
 
 function shortDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
@@ -38,24 +21,23 @@ export default function CampaignTimeseriesCard() {
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
   const token      = (session?.user as User)?.jwt ?? "";
-  const isTestOrg  = useIsTestOrg();
 
-  const shouldFetch = !isTestOrg && !!token && !!campaignId;
+  const shouldFetch = !!token && !!campaignId;
 
-  const { data: timeseriesData, isLoading } = useSWR<TimeseriesData[]>(
-    shouldFetch ? [`/get-timeseries/${campaignId}?is_asset=false`, token] : null,
+  const { data: timeseriesData, isLoading } = useSWR<TimeseriesRowV2[]>(
+    shouldFetch ? [`/v2/campaign/${campaignId}/timeseries`, token] : null,
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
 
-  const timeseries = isTestOrg ? SAMPLE_TIMESERIES : (timeseriesData ?? []);
+  const timeseries = timeseriesData ?? [];
   const chartData  = timeseries.map(d => ({
-    date:        shortDate(d.date),
-    impressions: d.total_impressions,
-    reach:       d.total_reach,
+    date:        shortDate(d.play_date),
+    impressions: d.impressions,
+    reach:       d.reach,
   }));
 
-  const loading = !isTestOrg && isLoading;
+  const loading = isLoading;
 
   return (
     <div style={{

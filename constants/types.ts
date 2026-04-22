@@ -60,6 +60,44 @@ export type DemographicData = {
 
 }
 
+export type CampaignDetailV2 = {
+  campaign_id: string;
+  campaign_name: string;
+  campaign_alias: string | null;
+  org_id: string;
+  advertiser_id: string | null;
+  agency_id: string | null;
+  advertiser_name: string | null;
+  agency_name: string | null;
+  start_date: string;
+  end_date: string;
+  status: 'draft' | 'scheduled' | 'active' | 'completed';
+  asset_ids: string[];
+  creative_ids: string[];
+  regions: string[];
+  description: string | null;
+  goals: string | null;
+  target_audiences: string | null;
+  impressions_target: number | null;
+  projected_impressions: number | null;
+  projected_reach: number | null;
+  last_processed_date: string | null;
+  created_at: string;
+  last_updated: string | null;
+  total_impressions: number;
+  reach: number;
+  frequency: number;
+  total_ad_plays: number;
+  days_active: number;
+  total_assets: number;
+  total_hours_played: number;
+  avg_daily_impressions: number;
+  avg_impressions_per_play: number;
+  first_play_date: string | null;
+  last_play_date: string | null;
+  summary_last_processed: string | null;
+};
+
 export type CampaignTypeV2 = {
   // Core details from hm_b_campaign_details
   campaign_id: string;
@@ -579,8 +617,12 @@ export interface ImpressionsChartsResponse {
 }
 
 export interface CampaignAIOverview {
-  exec_summary: string;
-  audience_assessment: string;
+  executive_summary: string;
+  target_summary: string;
+  strategic_insight?: string;
+  recommendations?: string;
+  targeted_segments?: any[];
+  top_personas?: any[];
 }
 
 export interface CoreMetricsResponse {

@@ -4,10 +4,9 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
-import { User, DemographicsResponse, IncomeApiData } from "@/constants/types";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
 import SectionCard from "@/components/campaigns/detail/SectionCard";
 import RankedBarList, { RankedBarItem } from "@/components/campaigns/detail/RankedBarList";
 
@@ -22,79 +21,16 @@ const TOOLTIP_STYLE = {
   },
 };
 
-// ── Sample data ───────────────────────────────────────────────────
-const SAMPLE_DEMOGRAPHICS: DemographicsResponse = {
-  data: {
-    totals: {
-      total_males:   228942,
-      total_females: 228943,
-      total_reach:   457885,
-      age_distribution: {
-        "20–34": 126523, "35–49": 132739, "50–64": 111346, "65–80": 67996, "80+": 10231,
-      },
-      education_distribution: {
-        "University Education": 39.6, "Professional/Trades": 37.6, "Secondary Education": 22.8,
-      },
-      occupation_distribution: {
-        "Technicians & Trades": 66425, "Clerical & Admin": 58007, "Managers": 56558,
-        "Community & Personal Svc": 54272, "Labourers": 38425, "Sales Workers": 36374,
-        "Machinery Operators": 31555,
-      },
-      median_age: 42,
-      median_weekly_household_income: 2115,
-      average_income_personal: 1480,
-      average_income_family: 2960,
-      last_updated: "2026-03-09",
-    },
-    indexed: {
-      "1 bedroom_Index": "121",
-      "High Household Income_Index": "113",
-      "45–49 years_Index": "106",
-      "University Education_Index": "106",
-      "Male_Index": "101",
-    },
-  },
+// ── Types ─────────────────────────────────────────────────────────
+type DemoSegment = {
+  segment_type: string;
+  data: { key: string; label: string; proportion: number; index: number }[];
+  total_weight: number;
 };
 
-const SAMPLE_INCOME: IncomeApiData[] = [
-  { income_range: "$0–52K",     total_reach: 1800  },
-  { income_range: "$52–104K",   total_reach: 64200 },
-  { income_range: "$104–156K",  total_reach: 64800 },
-  { income_range: "$156–208K",  total_reach: 9400  },
-  { income_range: "$208–260K+", total_reach: 3200  },
-];
-
 // ── Helpers ───────────────────────────────────────────────────────
-function fmt(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `${Math.round(n / 1_000)}K`;
-  return n.toLocaleString();
-}
-
-function recordToRankedItems(
-  data: Record<string, number>,
-  formatValue: (v: number) => string = fmt
-): RankedBarItem[] {
-  return Object.entries(data)
-    .sort(([, a], [, b]) => b - a)
-    .map(([label, value]) => ({ label, value, displayValue: formatValue(value) }));
-}
-
-function indexedToRankedItems(indexed: Record<string, string | null>): RankedBarItem[] {
-  return Object.entries(indexed)
-    .filter(([, v]) => v !== null)
-    .map(([key, v]) => {
-      const score = parseFloat(v ?? "0");
-      const label = key.replace(/_Index$/, "").replace(/_/g, " ");
-      return {
-        label,
-        value: Math.max(score - 100, 0),
-        displayValue: String(Math.round(score)),
-        rightTag: `+${Math.round(score - 100)}%`,
-      };
-    })
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
+function findSegment(data: DemoSegment[] | undefined, type: string) {
+  return data?.find(s => s.segment_type === type)?.data ?? [];
 }
 
 // ── Loading skeleton ──────────────────────────────────────────────
@@ -114,69 +50,75 @@ export default function AudienceInsightsTab() {
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
   const token      = (session?.user as User)?.jwt ?? "";
-  const isTestOrg  = useIsTestOrg();
 
-  const shouldFetch = !isTestOrg && !!token && !!campaignId;
+  const shouldFetch = !!token && !!campaignId;
 
-  const { data: demoResp, isLoading: demoLoading } = useSWR<DemographicsResponse>(
-    shouldFetch
-      ? [`/get-demographics-data/${campaignId}?is_asset=false&include_plan_restriction=true`, token]
-      : null,
+  const { data: demographicsData, isLoading } = useSWR<DemoSegment[]>(
+    shouldFetch ? [`/v2/campaign/${campaignId}/demographics`, token] : null,
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
 
-  const { data: incomeResp, isLoading: incomeLoading } = useSWR<IncomeApiData[]>(
-    shouldFetch
-      ? [`/get-household-income-graph/${campaignId}?is_asset=false`, token]
-      : null,
-    fetcher,
-    { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
-  );
-
-  const demo   = isTestOrg ? SAMPLE_DEMOGRAPHICS : demoResp;
-  const income = isTestOrg ? SAMPLE_INCOME       : incomeResp;
-  const loading = !isTestOrg && (demoLoading || incomeLoading);
+  const loading = isLoading;
 
   // ── Derived data ────────────────────────────────────────────────
-  const totalReach = demo?.data.totals.total_reach ?? 0;
-
+  const genderSegment = findSegment(demographicsData, 'gender');
   const genderItems: RankedBarItem[] = useMemo(() => {
-    if (!demo) return [];
-    const { total_males, total_females, total_reach } = demo.data.totals;
-    const totalG = total_males + total_females || total_reach;
-    return [
-      { label: "Female", value: total_females, displayValue: `${Math.round((total_females / totalG) * 100)}%`, sublabel: total_females.toLocaleString() },
-      { label: "Male",   value: total_males,   displayValue: `${Math.round((total_males   / totalG) * 100)}%`, sublabel: total_males.toLocaleString() },
-    ];
-  }, [demo]);
+    return genderSegment.map(g => ({
+      label: g.label,
+      value: g.proportion,
+      displayValue: `${(g.proportion * 100).toFixed(1)}%`,
+    })).sort((a, b) => b.value - a.value);
+  }, [genderSegment]);
 
-  const overIndexedItems = useMemo(() =>
-    demo ? indexedToRankedItems(demo.data.indexed) : [],
-    [demo]
-  );
+  const overIndexedItems: RankedBarItem[] = useMemo(() => {
+    if (!demographicsData) return [];
+    return demographicsData
+      .flatMap(s => s.data.map(d => ({ ...d, segment_type: s.segment_type })))
+      .filter(d => d.index > 110)
+      .sort((a, b) => b.index - a.index)
+      .slice(0, 8)
+      .map(d => ({
+        label: d.label,
+        value: d.index - 100,
+        displayValue: d.index.toFixed(0),
+        rightTag: `+${(d.index - 100).toFixed(0)}`,
+      }));
+  }, [demographicsData]);
 
   const ageChartData = useMemo(() => {
-    if (!demo?.data.totals.age_distribution) return [];
-    return Object.entries(demo.data.totals.age_distribution).map(([group, v]) => ({ group, v }));
-  }, [demo]);
+    return findSegment(demographicsData, 'age').map(d => ({
+      group: d.label,
+      v: parseFloat((d.proportion * 100).toFixed(1)),
+    }));
+  }, [demographicsData]);
 
-  const occupationItems = useMemo(() =>
-    demo ? recordToRankedItems(demo.data.totals.occupation_distribution) : [],
-    [demo]
-  );
+  const occupationItems: RankedBarItem[] = useMemo(() => {
+    return findSegment(demographicsData, 'occupation')
+      .sort((a, b) => b.proportion - a.proportion)
+      .map(d => ({
+        label: d.label,
+        value: d.proportion,
+        displayValue: `${(d.proportion * 100).toFixed(1)}%`,
+      }));
+  }, [demographicsData]);
 
   const educationItems: RankedBarItem[] = useMemo(() => {
-    if (!demo) return [];
-    return Object.entries(demo.data.totals.education_distribution)
-      .sort(([, a], [, b]) => b - a)
-      .map(([label, value]) => ({ label, value, displayValue: `${value}%`, suffix: "" }));
-  }, [demo]);
+    return findSegment(demographicsData, 'education')
+      .sort((a, b) => b.proportion - a.proportion)
+      .map(d => ({
+        label: d.label,
+        value: d.proportion,
+        displayValue: `${(d.proportion * 100).toFixed(1)}%`,
+      }));
+  }, [demographicsData]);
 
-  const incomeChartData = useMemo(() =>
-    (income ?? []).map(d => ({ range: d.income_range, v: d.total_reach })),
-    [income]
-  );
+  const hhIncomeData = useMemo(() => {
+    return findSegment(demographicsData, 'hh_income').map(d => ({
+      range: d.label,
+      v: parseFloat((d.proportion * 100).toFixed(1)),
+    }));
+  }, [demographicsData]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -186,7 +128,7 @@ export default function AudienceInsightsTab() {
 
         <SectionCard
           title="Gender Distribution"
-          subtitle={`Total audience reach · ${fmt(totalReach)}`}
+          subtitle="Audience split by gender"
         >
           {loading ? <SkeletonRows count={2} /> : (
             <RankedBarList
@@ -224,7 +166,7 @@ export default function AudienceInsightsTab() {
                   <CartesianGrid {...GRID_STYLE} />
                   <XAxis dataKey="group" tick={TICK_STYLE} tickLine={false} axisLine={false} />
                   <YAxis tick={TICK_STYLE} tickLine={false} axisLine={false}
-                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                    tickFormatter={(v: number) => `${v}%`} />
                   <Tooltip {...TOOLTIP_STYLE} />
                   <Bar dataKey="v" fill="var(--color-text)" radius={[3, 3, 0, 0]} />
                 </BarChart>
@@ -252,32 +194,18 @@ export default function AudienceInsightsTab() {
         <SectionCard
           title="Household Income Distribution"
           subtitle="Annual household income ranges in your audience"
-          action={
-            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 10, color: "var(--color-text-muted)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ display: "inline-block", width: 12, borderTop: "1.5px dashed var(--color-text-muted)" }} />
-                City avg
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ display: "inline-block", width: 12, borderTop: "1.5px dashed var(--color-text)" }} />
-                Audience avg
-              </span>
-            </div>
-          }
         >
           {loading ? (
             <div style={{ height: 200, background: "var(--color-border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
           ) : (
             <div style={{ height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={incomeChartData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }} barCategoryGap="20%">
+                <BarChart data={hhIncomeData} margin={{ top: 5, right: 10, left: -15, bottom: 0 }} barCategoryGap="20%">
                   <CartesianGrid {...GRID_STYLE} />
                   <XAxis dataKey="range" tick={{ ...TICK_STYLE, fontSize: 9 }} tickLine={false} axisLine={false} />
                   <YAxis tick={TICK_STYLE} tickLine={false} axisLine={false}
-                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                    tickFormatter={(v: number) => `${v}%`} />
                   <Tooltip {...TOOLTIP_STYLE} />
-                  <ReferenceLine x="$52–104K"  stroke="var(--color-text-muted)" strokeDasharray="4 2" strokeWidth={1.5} />
-                  <ReferenceLine x="$104–156K" stroke="var(--color-text)"       strokeDasharray="4 2" strokeWidth={1.5} />
                   <Bar dataKey="v" fill="var(--color-text)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, Download, Share2 } from "lucide-react";
-import { CampaignInfoType } from "@/constants/types";
+import { CampaignDetailV2 } from "@/constants/types";
 import CampaignStatusBadge from "@/components/campaigns/CampaignStatusBadge";
 import { formatCampaignDate, computeCampaignProgress } from "@/lib/campaigns";
 
@@ -15,7 +15,7 @@ const TABS: { key: DetailTab; label: string }[] = [
 ];
 
 interface CampaignDetailHeaderProps {
-  campaign: CampaignInfoType | null;
+  campaign: CampaignDetailV2 | null;
   isLoading?: boolean;
   activeTab: DetailTab;
   onTabChange: (tab: DetailTab) => void;
@@ -31,9 +31,9 @@ export default function CampaignDetailHeader({
 }: CampaignDetailHeaderProps) {
 
   const progress = campaign ? computeCampaignProgress({
-    impressions_achieved: campaign.impressions_achieved ?? 0,
-    impressions_target:   campaign.impressions_target,
-    projected_impressions: campaign.projected_impressions,
+    impressions_achieved: campaign.total_impressions ?? 0,
+    impressions_target:   campaign.impressions_target ?? 0,
+    projected_impressions: campaign.projected_impressions ?? 0,
   }) : 0;
 
   return (
@@ -94,11 +94,11 @@ export default function CampaignDetailHeader({
                   <Clock size={10} />
                   {formatCampaignDate(campaign.start_date)} – {formatCampaignDate(campaign.end_date)}
                 </span>
-                {campaign.client_name && (
+                {campaign.advertiser_name && (
                   <>
                     <span style={{ color: "var(--color-border)", fontSize: 12 }}>·</span>
                     <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                      {campaign.client_name}
+                      {campaign.advertiser_name}
                     </span>
                   </>
                 )}

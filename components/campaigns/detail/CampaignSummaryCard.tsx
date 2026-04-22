@@ -98,9 +98,9 @@ export default function CampaignSummaryCard({ metrics, metricsLoading, aiOvervie
             </button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <AIPoint>{aiOverview.exec_summary}</AIPoint>
-            {expanded && aiOverview.audience_assessment && (
-              <AIPoint>{aiOverview.audience_assessment}</AIPoint>
+            <AIPoint>{aiOverview.executive_summary}</AIPoint>
+            {expanded && aiOverview.target_summary && (
+              <AIPoint>{aiOverview.target_summary}</AIPoint>
             )}
           </div>
         </div>

@@ -1,11 +1,11 @@
 "use client";
 
 import { Wand2 } from "lucide-react";
-import { MetricsData, CampaignAIOverview } from "@/constants/types";
+import { CampaignDetailV2, CampaignAIOverview } from "@/constants/types";
 import { formatImpressions } from "@/lib/campaigns";
 
 interface CampaignMetricsRowProps {
-  metrics: MetricsData | null;
+  metrics: CampaignDetailV2 | null;
   isLoading?: boolean;
   aiOverview?: CampaignAIOverview | null;
 }
@@ -19,16 +19,18 @@ const METRICS_CONFIG = [
 ] as const;
 
 export default function CampaignMetricsRow({ metrics, isLoading, aiOverview }: CampaignMetricsRowProps) {
-  const frequency = metrics && metrics.total_unique_reach > 0
-    ? (metrics.total_impressions / metrics.total_unique_reach).toFixed(2)
+  const frequency = metrics?.frequency
+    ? Number(metrics.frequency).toFixed(2)
     : "—";
 
   const values: Record<string, string> = metrics ? {
     impressions: formatImpressions(metrics.total_impressions),
-    reach:       formatImpressions(metrics.total_unique_reach),
+    reach:       formatImpressions(metrics.reach),
     frequency,
-    avgDaily:    formatImpressions(metrics.average_daily_impressions),
-    adPlays:     metrics.ad_plays ? formatImpressions(metrics.ad_plays) : "—",
+    avgDaily:    formatImpressions(metrics.avg_daily_impressions),
+    adPlays:     metrics.total_ad_plays
+      ? formatImpressions(metrics.total_ad_plays)
+      : "—",
   } : {};
 
   return (
@@ -92,10 +94,9 @@ export default function CampaignMetricsRow({ metrics, isLoading, aiOverview }: C
               </span>
             </div>
             {[
-              aiOverview.exec_summary,
-              aiOverview.audience_assessment,
-              "Creative performance is stable across all formats with strong completion rates throughout the campaign flight.",
-            ].map((point, i) => (
+              aiOverview.executive_summary,
+              aiOverview.target_summary,
+            ].filter(Boolean).map((point, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <div style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--color-primary)", flexShrink: 0, marginTop: 5 }} />
                 <span style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{point}</span>

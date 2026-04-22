@@ -78,9 +78,9 @@ export default function CampaignAISummary({ data, isLoading }: CampaignAISummary
           </>
         ) : (
           <>
-            <AIPoint>{data.exec_summary}</AIPoint>
-            {expanded && data.audience_assessment && (
-              <AIPoint>{data.audience_assessment}</AIPoint>
+            <AIPoint>{data.executive_summary}</AIPoint>
+            {expanded && data.target_summary && (
+              <AIPoint>{data.target_summary}</AIPoint>
             )}
           </>
         )}
