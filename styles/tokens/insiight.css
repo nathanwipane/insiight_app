@@ -24,4 +24,21 @@
   --status-completed-text: #7c3aed;
   --status-draft-bg:   #f9fafb;
   --status-draft-text: #9ca3af;
+
+  /* Error state */
+  --color-error:          #dc2626;
+  --color-error-subtle:   #fef2f2;
+  --color-error-border:   #fecaca;
+
+  /* Overlay */
+  --color-overlay:        rgba(0, 0, 0, 0.5);
+
+  /* Font scale — heading sizes */
+  --font-size-xs:     9px;
+  --font-size-sm:     10px;
+  --font-size-base:   11px;
+  --font-size-md:     12px;
+  --font-size-lg:     13px;
+  --font-size-xl:     18px;
+  --font-size-2xl:    26px;
 }

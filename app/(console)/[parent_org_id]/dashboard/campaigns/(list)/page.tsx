@@ -16,6 +16,8 @@ import CampaignsTableSkeleton from "@/components/campaigns/CampaignsTableSkeleto
 import CampaignMetricCard from "@/components/campaigns/CampaignMetricCard";
 import GanttTimeline from "@/components/campaigns/GanttTimeline";
 import SelectDropdown from "@/components/ui/SelectDropdown";
+import ErrorBanner from "@/components/ui/ErrorBanner";
+import EmptyState from "@/components/ui/EmptyState";
 
 // ── Constants ─────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -128,20 +130,7 @@ export default function CampaignsPage() {
 
   // ── Error state ───────────────────────────────────────────────
   if (error) {
-    return (
-      <div style={{
-        padding: "48px 24px", textAlign: "center",
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)", borderRadius: 10,
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "#dc2626", marginBottom: 6 }}>
-          Error loading campaigns
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-          {error.message}
-        </div>
-      </div>
-    );
+    return <ErrorBanner message={`Error loading campaigns — ${error.message}`} />;
   }
 
   // ── Loading state ─────────────────────────────────────────────
@@ -152,31 +141,26 @@ export default function CampaignsPage() {
   // ── Empty state ───────────────────────────────────────────────
   if (allCampaigns.length === 0) {
     return (
-      <div style={{
-        background: "var(--color-surface)", border: "1px solid var(--color-border)",
-        borderRadius: 10, padding: "64px 24px", textAlign: "center",
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)", marginBottom: 6 }}>
-          No campaigns yet
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 20 }}>
-          Create your first campaign to get started.
-        </div>
-        {hasPermission(PERMISSIONS.CAMPAIGNS_CREATE) && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              height: 32, padding: "0 14px",
-              background: "var(--color-text)", color: "var(--color-surface)",
-              border: "none", borderRadius: 7,
-              fontSize: 12, fontWeight: 500, cursor: "pointer",
-            }}
-          >
-            <Plus size={12} /> Create campaign
-          </button>
-        )}
-      </div>
+      <EmptyState
+        title="No campaigns yet"
+        subtitle="Create your first campaign to get started."
+        action={
+          hasPermission(PERMISSIONS.CAMPAIGNS_CREATE) ? (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                height: 32, padding: "0 14px",
+                background: "var(--color-text)", color: "var(--color-surface)",
+                border: "none", borderRadius: 7,
+                fontSize: 12, fontWeight: 500, cursor: "pointer",
+              }}
+            >
+              <Plus size={12} /> Create campaign
+            </button>
+          ) : undefined
+        }
+      />
     );
   }
 

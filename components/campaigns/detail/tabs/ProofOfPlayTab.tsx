@@ -6,6 +6,8 @@ import useSWR from "swr";
 import { Image as ImageIcon, Calendar, MapPin } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
 type PopV2 = {
   id: number;
@@ -79,10 +81,10 @@ function PopCard({ pop }: { pop: PopV2 }) {
 function SkeletonCard() {
   return (
     <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, overflow: "hidden" }}>
-      <div style={{ height: 160, background: "var(--color-border)", animation: "pulse 1.5s ease-in-out infinite" }} />
+      <Skeleton height={160} borderRadius={0} />
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ height: 11, width: "70%", background: "var(--color-border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
-        <div style={{ height: 9,  width: "50%", background: "var(--color-border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
+        <Skeleton height={11} width="70%" />
+        <Skeleton height={9} width="50%" />
       </div>
     </div>
   );
@@ -137,15 +139,10 @@ export default function ProofOfPlayTab() {
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : images.length === 0 ? (
-          <div style={{ padding: "48px 24px", textAlign: "center" }}>
-            <ImageIcon size={24} style={{ color: "var(--color-text-muted)", margin: "0 auto 12px" }} />
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)", marginBottom: 4 }}>
-              No proof of play images yet
-            </div>
-            <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-              Images will appear here once uploaded.
-            </div>
-          </div>
+          <EmptyState
+            title="No proof of play images yet"
+            subtitle="Images will appear here once uploaded."
+          />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {images.map(pop => <PopCard key={pop.id} pop={pop} />)}

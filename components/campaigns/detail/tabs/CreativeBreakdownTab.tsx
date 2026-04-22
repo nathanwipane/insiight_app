@@ -8,6 +8,8 @@ import { Film } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
 import { formatImpressions } from "@/lib/campaigns";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
 type CreativeItemV2 = {
   creative_id: string;
@@ -64,27 +66,19 @@ export default function CreativeBreakdownTab() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, overflow: "hidden" }}>
-              <div style={{ height: 112, background: "var(--color-border)", animation: "pulse 1.5s ease-in-out infinite" }} />
+              <Skeleton height={112} borderRadius={0} />
               <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ height: 10, width: "60%", background: "var(--color-border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
-                <div style={{ height: 10, width: "40%", background: "var(--color-border)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
+                <Skeleton height={10} width="60%" />
+                <Skeleton height={10} width="40%" />
               </div>
             </div>
           ))}
         </div>
       ) : creativeEntries.length === 0 ? (
-        <div style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: 10, padding: "64px 24px", textAlign: "center",
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)", marginBottom: 6 }}>
-            No creative data
-          </div>
-          <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-            Creative performance data will appear here once available.
-          </div>
-        </div>
+        <EmptyState
+          title="No creative data"
+          subtitle="Creative performance data will appear here once available."
+        />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(creativeEntries.length, 3)}, 1fr)`, gap: 12 }}>
           {creativeEntries.map((item, idx) => {

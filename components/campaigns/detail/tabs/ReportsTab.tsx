@@ -1,88 +1,63 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { BarChart2, Download, FileText } from "lucide-react";
-import { User, CampaignPCR, NewsletterReport } from "@/constants/types";
+import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
-import { useIsTestOrg } from "@/hooks/useIsTestOrg";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
-// ── Sample data ───────────────────────────────────────────────────
-const SAMPLE_PCR: CampaignPCR = {
-  data: {
-    id: 1,
-    campaign_id: "cmp-a1b2c3",
-    total_impressions: 2871920,
-    total_unique_reach: 437961,
-    exec_summary: "The campaign delivered strong market impact across all five cities, achieving full impressions target with no shortfall against projections.",
-    targeted_segments: [],
-    audience_assessment: "High penetration among professionals and high-income earners in affluent suburbs.",
-    top_personas: [],
-    recommendations: "Consider increasing budget allocation to peak evening hours for future campaigns.",
-    created_at: "2026-03-10T09:00:00Z",
-    campaign_meta_data: {
-      goals: "Brand awareness",
-      status: "completed",
-      end_date: "2026-03-09",
-      model_name: "Insiight v2",
-      start_date: "2026-02-02",
-      campaign_id: "cmp-a1b2c3",
-      client_name: "Tourism Australia",
-      description: "",
-      campaign_name: "Summer Drive Awareness",
-      projected_reach: 420000,
-      target_audiences: [],
-      projected_impressions: 2800000,
-    },
-    creative_list: {},
-    display_creative: "",
-    target_audiences: "",
-    asset_list: [],
-    price_of_campaign: 85000,
-    organisation_name: "Insiight",
-  },
-  timeseries: [],
+type AIInsightsV2 = {
+  pcr: {
+    id: number;
+    campaign_id: string;
+    report_type: string;
+    week_end_date: string;
+    executive_summary: string;
+    target_summary: string;
+    strategic_insight: string;
+    targeted_segments: any[];
+    top_personas: any[];
+    recommendations: string;
+    created_at: string;
+    last_updated: string;
+  } | null;
+  weekly: {
+    id: number;
+    campaign_id: string;
+    report_type: string;
+    week_end_date: string;
+    executive_summary: string;
+    target_summary: string;
+    created_at: string;
+  }[];
 };
-
-const SAMPLE_NEWSLETTERS: NewsletterReport[] = [
-  { week_end_date: "2026-02-08", total_impressions: 312400, unique_reach: 51200, performance_summary: "Strong start across all markets. Sydney and Brisbane leading delivery." },
-  { week_end_date: "2026-02-15", total_impressions: 698200, unique_reach: 108400, performance_summary: "Delivery tracking ahead of pace. Evening peak hours performing above benchmark." },
-  { week_end_date: "2026-02-22", total_impressions: 1041600, unique_reach: 168900, performance_summary: "Mid-campaign strong. Audience quality metrics exceeding projections." },
-  { week_end_date: "2026-03-01", total_impressions: 1389800, unique_reach: 224300, performance_summary: "On track for full delivery. Creative performance stable across all formats." },
-];
-
-// ── Helpers ───────────────────────────────────────────────────────
-function fmt(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `${Math.round(n / 1_000)}K`;
-  return n.toLocaleString();
-}
 
 export default function ReportsTab() {
   const params     = useParams();
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
   const token      = (session?.user as User)?.jwt ?? "";
-  const isTestOrg  = useIsTestOrg();
 
-  const shouldFetch = !isTestOrg && !!token && !!campaignId;
+  const [pcrModal, setPcrModal] = useState<'presentation' | 'newsletter' | null>(null);
+  const [weeklyViewId, setWeeklyViewId] = useState<number | null>(null);
 
-  const { data: pcrData, isLoading: pcrLoading } = useSWR<CampaignPCR>(
-    shouldFetch ? [`/get-campaign-pcr-by-campaign-id/${campaignId}`, token] : null,
+  const { data: insightsData, isLoading } = useSWR<AIInsightsV2>(
+    !!token && !!campaignId
+      ? [`/v2/campaign/${campaignId}/insights`, token]
+      : null,
     fetcher,
     { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
   );
 
-  const { data: newsletters, isLoading: nlLoading } = useSWR<NewsletterReport[]>(
-    shouldFetch ? [`/get-all-campaign-newsletter-reports/${campaignId}`, token] : null,
-    fetcher,
-    { refreshInterval: 3600000, revalidateOnFocus: true, errorRetryCount: 3 }
-  );
-
-  const pcr  = isTestOrg ? SAMPLE_PCR         : pcrData;
-  const nl   = isTestOrg ? SAMPLE_NEWSLETTERS  : (newsletters ?? []);
-  const loading = !isTestOrg && (pcrLoading || nlLoading);
+  const pcr     = insightsData?.pcr ?? null;
+  const nl      = insightsData?.weekly ?? [];
+  const loading = isLoading;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -116,7 +91,7 @@ export default function ReportsTab() {
 
         <div style={{ padding: 20 }}>
           {loading ? (
-            <div style={{ height: 80, background: "var(--color-border)", borderRadius: 8, animation: "pulse 1.5s ease-in-out infinite" }} />
+            <Skeleton height={80} borderRadius={8} />
           ) : pcr ? (
             <div style={{
               display: "flex", alignItems: "center", gap: 16,
@@ -139,30 +114,26 @@ export default function ReportsTab() {
                   Post-Campaign Report
                 </div>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                  Full analytics · {new Date(pcr.data.campaign_meta_data.start_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
-                  {" – "}{new Date(pcr.data.campaign_meta_data.end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
+                  Week ending {new Date(pcr.week_end_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                 <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
-                  Generated {new Date(pcr.data.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
+                  Generated {new Date(pcr.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
                 </span>
-                <button style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  height: 28, padding: "0 10px",
-                  fontSize: 11, color: "var(--color-text-secondary)",
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 6, cursor: "pointer",
-                }}>
+                <Button variant="primary" size="sm" onClick={() => setPcrModal('presentation')}>
+                  View Presentation
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setPcrModal('newsletter')}>
+                  View Newsletter
+                </Button>
+                <Button variant="secondary" size="sm">
                   <Download size={10} /> PDF
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <div style={{ padding: "32px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>No report available yet.</div>
-            </div>
+            <EmptyState title="No report available yet." />
           )}
         </div>
       </div>
@@ -194,56 +165,94 @@ export default function ReportsTab() {
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} style={{ height: 64, background: "var(--color-border)", borderRadius: 8, animation: "pulse 1.5s ease-in-out infinite" }} />
+              <Skeleton key={i} height={64} borderRadius={8} />
             ))
           ) : nl.length === 0 ? (
-            <div style={{ padding: "32px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>No weekly reports yet.</div>
-            </div>
+            <EmptyState title="No weekly reports yet." />
           ) : (
-            nl.map((report, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  padding: 14, border: "1px solid var(--color-border)",
-                  borderRadius: 8,
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = "var(--color-surface-alt)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              >
-                <div style={{
-                  width: 32, height: 32, borderRadius: 6,
-                  background: "var(--color-surface-alt)",
-                  border: "1px solid var(--color-border)",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <FileText size={14} style={{ color: "var(--color-text-secondary)" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text)", marginBottom: 3 }}>
-                    Week ending {new Date(report.week_end_date).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+            nl.map((report) => {
+              const summary = report.executive_summary ?? "";
+              const summaryShort = summary.length > 100 ? summary.slice(0, 100) + "…" : summary;
+              return (
+                <div
+                  key={report.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14,
+                    padding: 14, border: "1px solid var(--color-border)",
+                    borderRadius: 8,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-surface-alt)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 6,
+                    background: "var(--color-surface-alt)",
+                    border: "1px solid var(--color-border)",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    <FileText size={14} style={{ color: "var(--color-text-secondary)" }} />
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
-                    {fmt(report.total_impressions)} impressions · {fmt(report.unique_reach)} reach
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text)", marginBottom: 3 }}>
+                      Week ending {new Date(report.week_end_date).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
+                      {summaryShort}
+                    </div>
                   </div>
+                  <div style={{ flexShrink: 0, maxWidth: 240, display: "none" }} />
+                  <button
+                    onClick={() => setWeeklyViewId(report.id)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      height: 28, padding: "0 10px", flexShrink: 0,
+                      fontSize: 11, color: "var(--color-text-secondary)",
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 6, cursor: "pointer",
+                    }}
+                  >
+                    <Download size={10} /> View
+                  </button>
                 </div>
-                <div style={{ flexShrink: 0, maxWidth: 240, display: "none" }} />
-                <button style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
-                  height: 28, padding: "0 10px", flexShrink: 0,
-                  fontSize: 11, color: "var(--color-text-secondary)",
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 6, cursor: "pointer",
-                }}>
-                  <Download size={10} /> View
-                </button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
+
+      <Modal
+        open={pcrModal === 'presentation' && !!pcr}
+        onClose={() => setPcrModal(null)}
+        title="PCR Presentation — coming soon"
+        maxWidth={800}
+      >
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+          Content coming soon.
+        </div>
+      </Modal>
+
+      <Modal
+        open={pcrModal === 'newsletter' && !!pcr}
+        onClose={() => setPcrModal(null)}
+        title="PCR Newsletter — coming soon"
+        maxWidth={800}
+      >
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+          Content coming soon.
+        </div>
+      </Modal>
+
+      <Modal
+        open={weeklyViewId !== null}
+        onClose={() => setWeeklyViewId(null)}
+        title="Weekly Report — coming soon"
+        maxWidth={600}
+      >
+        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+          Content coming soon.
+        </div>
+      </Modal>
     </div>
   );
 }

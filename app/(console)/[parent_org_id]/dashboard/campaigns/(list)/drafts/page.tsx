@@ -13,6 +13,8 @@ import { fetcher } from "@/lib/swrFetchers";
 import { computeCampaignStatus } from "@/lib/campaigns";
 import CampaignsTable from "@/components/campaigns/CampaignsTable";
 import CampaignsTableSkeleton from "@/components/campaigns/CampaignsTableSkeleton";
+import ErrorBanner from "@/components/ui/ErrorBanner";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function DraftCampaignsPage() {
   const params = useParams();
@@ -56,20 +58,7 @@ export default function DraftCampaignsPage() {
 
   // ── Error state ───────────────────────────────────────────────
   if (error) {
-    return (
-      <div style={{
-        padding: "48px 24px", textAlign: "center",
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)", borderRadius: 10,
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "#dc2626", marginBottom: 6 }}>
-          Error loading campaigns
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-          {error.message}
-        </div>
-      </div>
-    );
+    return <ErrorBanner message={`Error loading campaigns — ${error.message}`} />;
   }
 
   // ── Loading state ─────────────────────────────────────────────
@@ -80,17 +69,10 @@ export default function DraftCampaignsPage() {
   // ── Empty state ───────────────────────────────────────────────
   if (draftCampaigns.length === 0) {
     return (
-      <div style={{
-        background: "var(--color-surface)", border: "1px solid var(--color-border)",
-        borderRadius: 10, padding: "64px 24px", textAlign: "center",
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)", marginBottom: 6 }}>
-          No draft campaigns
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-          Draft campaigns will appear here once created.
-        </div>
-      </div>
+      <EmptyState
+        title="No draft campaigns"
+        subtitle="Draft campaigns will appear here once created."
+      />
     );
   }
 
