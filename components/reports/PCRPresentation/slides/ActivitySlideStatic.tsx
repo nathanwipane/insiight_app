@@ -1,14 +1,14 @@
 "use client";
 
 import SlideWrapper from "../SlideWrapper";
+import AustraliaMap from "../AustraliaMap";
 import { SlideProps, SuburbData } from "../types";
 
 interface ActivitySlideStaticProps extends SlideProps {
   suburbs: SuburbData[];
-  staticMapUrl?: string;
 }
 
-export default function ActivitySlideStatic({ theme, campaign, pcr, reportDate, suburbs, staticMapUrl }: ActivitySlideStaticProps) {
+export default function ActivitySlideStatic({ theme, campaign, pcr, reportDate, suburbs }: ActivitySlideStaticProps) {
   const primary = theme.primary_colour ?? "#95bbc1";
   const textSecondary = "rgba(255, 255, 255, 0.80)";
   const textMuted = "rgba(255,255,255,0.25)";
@@ -184,30 +184,10 @@ export default function ActivitySlideStatic({ theme, campaign, pcr, reportDate, 
           background: "#1a1f2a",
           minHeight: 0,
         }}>
-          {staticMapUrl ? (
-            <img
-              src={staticMapUrl}
-              alt="Geographic heatmap"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          ) : (
-            <div style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              color: "rgba(255,255,255,0.15)",
-            }}>
-              No map data available
-            </div>
-          )}
+          <AustraliaMap
+            regions={campaign.regions ?? []}
+            primary={primary}
+          />
         </div>
       </div>
     </SlideWrapper>
