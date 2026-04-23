@@ -100,14 +100,14 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
               cx={pos.x}
               cy={pos.y}
               r={50}
-              fill={rgba(0.12)}
+              fill={rgba(0.3)}
             />
             <circle
               className="b-mid"
               cx={pos.x}
               cy={pos.y}
               r={32}
-              fill={rgba(0.25)}
+              fill={rgba(0.6)}
             />
             <circle
               cx={pos.x}
