@@ -7,6 +7,7 @@ import useSWR, { mutate } from "swr";
 import { X, Save } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
+import apiClient from "@/lib/config";
 import { uploadFileToS3 } from "@/lib/uploadToS3";
 import { OrgTheme, PopImage, PCRConfig } from "@/components/reports/PCRPresentation/types";
 
@@ -115,30 +116,21 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
     setSaving(true);
     try {
       if (activeTab === "theme") {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v2/organisation/theme`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ ...themeEdit, phone_numbers: phoneNumbers }),
-        });
+        await apiClient.put("/v2/organisation/theme",
+          { ...themeEdit, phone_numbers: phoneNumbers },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         mutate(["/v2/organisation/theme", token]);
       } else {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v2/campaign/${campaignId}/pcr-config`,
+        await apiClient.put(
+          `/v2/campaign/${campaignId}/pcr-config`,
           {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              gallery_image_ids: selectedImageIds,
-              cover_image_id: coverImageId,
-              cpm: cpm !== "" ? parseFloat(cpm) : null,
-            }),
-          }
+            gallery_image_ids: selectedImageIds,
+            cover_image_id: coverImageId,
+            overview_image_id: overviewImageId,
+            cpm: cpm !== "" ? parseFloat(cpm) : null,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         mutate([`/v2/campaign/${campaignId}/pcr-config`, token]);
       }

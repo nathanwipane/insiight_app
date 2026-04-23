@@ -1,6 +1,7 @@
 "use client";
 
 import SlideWrapper from "../SlideWrapper";
+import { Wand2 } from "lucide-react";
 import { SlideProps, PopImage, PCRConfig } from "../types";
 import { formatImpressions } from "@/lib/campaigns";
 
@@ -10,6 +11,7 @@ interface OverviewSlideProps extends SlideProps {
 }
 
 export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroImage, pcrConfig }: OverviewSlideProps) {
+  console.log('OverviewSlide pcrConfig:', pcrConfig);
   const primary = theme.primary_colour ?? "#95bbc1";
   const textMuted = "rgba(255,255,255,0.25)";
   const textSecondary = "rgba(255, 255, 255, 0.80)";
@@ -36,6 +38,8 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
       : []
     ),
   ];
+
+  console.log('OverviewSlide metrics:', metrics);
 
   const bullets = pcr.executive_summary
     .split(/(?<=\.)\s+/)
@@ -157,15 +161,22 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
 
         {/* Executive summary label */}
         <div style={{
-          fontSize: 12,
-          color: primary,
-          textTransform: "uppercase" as const,
-          letterSpacing: "0.1em",
-          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
           marginBottom: 12,
           flexShrink: 0,
         }}>
-          Executive Summary
+          <Wand2 size={16} style={{ color: primary, flexShrink: 0 }} />
+          <span style={{
+            fontSize: 12,
+            color: primary,
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.1em",
+            fontWeight: 600,
+          }}>
+            Executive Summary
+          </span>
         </div>
 
         {/* Bullets */}
@@ -189,7 +200,7 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
                 marginTop: 4,
               }} />
               <span style={{
-                fontSize: 12,
+                fontSize: 14,
                 color: textSecondary,
                 lineHeight: 1.6,
               }}>

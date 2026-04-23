@@ -42,23 +42,21 @@ export default function PCRPresentation({
   const { data: theme } = useSWR<OrgTheme>(
     token ? ["/v2/organisation/theme", token] : null, fetcher
   );
-  const { data: suburbsResp } = useSWR<{ status: boolean; data: SuburbData[] }>(
+  const { data: suburbs = [] } = useSWR<SuburbData[]>(
     token && campaignId ? [`/v2/campaign/${campaignId}/suburbs`, token] : null, fetcher
   );
-  const { data: demoResp } = useSWR<{ status: boolean; data: DemoSegment[] }>(
+  const { data: demographics = [] } = useSWR<DemoSegment[]>(
     token && campaignId ? [`/v2/campaign/${campaignId}/demographics`, token] : null, fetcher
   );
-  const { data: popsResp } = useSWR<{ status: boolean; data: PopImage[] }>(
+  const { data: allPops = [] } = useSWR<PopImage[]>(
     token && campaignId ? [`/v2/campaign/${campaignId}/pops`, token] : null, fetcher
   );
-  const { data: pcrConfigResp } = useSWR<{ status: boolean; data: PCRConfig }>(
+  const { data: pcrConfig } = useSWR<PCRConfig>(
     token && campaignId ? [`/v2/campaign/${campaignId}/pcr-config`, token] : null, fetcher
   );
 
-  const suburbs = suburbsResp?.data ?? [];
-  const demographics = demoResp?.data ?? [];
-  const allPops = popsResp?.data ?? [];
-  const pcrConfig = pcrConfigResp?.data;
+  console.log('pcrConfig:', pcrConfig);
+  console.log('pcrConfig?.cpm:', pcrConfig?.cpm);
 
   // Determine gallery images — use config selection if set, else all pops
   const galleryImages: PopImage[] = pcrConfig?.gallery_image_ids?.length
