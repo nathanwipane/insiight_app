@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import CoverSlide from "@/components/reports/PCRPresentation/slides/CoverSlide";
 import OverviewSlide from "@/components/reports/PCRPresentation/slides/OverviewSlide";
-import ActivitySlide from "@/components/reports/PCRPresentation/slides/ActivitySlide";
+import ActivitySlideStatic from "@/components/reports/PCRPresentation/slides/ActivitySlideStatic";
 import AudienceSlide from "@/components/reports/PCRPresentation/slides/AudienceSlide";
 import PersonasSlide from "@/components/reports/PCRPresentation/slides/PersonasSlide";
 import GallerySlide from "@/components/reports/PCRPresentation/slides/GallerySlide";
@@ -33,10 +33,12 @@ export default function SlidesRenderPage() {
   const [pops, setPops] = useState<PopImage[]>([]);
   const [pcrConfig, setPcrConfig] = useState<PCRConfig | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapRow[]>([]);
+  const [staticMapUrl, setStaticMapUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!token || !campaignId) return;
 
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
@@ -61,6 +63,11 @@ export default function SlidesRenderPage() {
       setPops(popsRes.data.data ?? []);
       setPcrConfig(configRes.data.data);
       setHeatmapData(heatmapRes.data.data ?? []);
+      if (MAPBOX_TOKEN) {
+        setStaticMapUrl(
+          `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/115.8613,-31.9523,10,0/1200x700@2x?access_token=${MAPBOX_TOKEN}`
+        );
+      }
       setReady(true);
       setTimeout(() => {
         (window as any).__slidesReady = true;
@@ -110,7 +117,7 @@ export default function SlidesRenderPage() {
   const slides = [
     <CoverSlide key="cover" {...slideProps} heroImage={heroImage} />,
     <OverviewSlide key="overview" {...slideProps} heroImage={overviewImage} pcrConfig={pcrConfig ?? null} />,
-    <ActivitySlide key="activity" {...slideProps} suburbs={suburbs} heatmapData={heatmapData} />,
+    <ActivitySlideStatic key="activity" {...slideProps} suburbs={suburbs} staticMapUrl={staticMapUrl} />,
     <AudienceSlide key="audience" {...slideProps} demographics={demographics} />,
     <PersonasSlide key="personas" {...slideProps} />,
     ...galleryImages.map((image, i) => (
