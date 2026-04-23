@@ -12,8 +12,8 @@ import CloseSlide from "@/components/reports/PCRPresentation/slides/CloseSlide";
 import { OrgTheme, PCRData, CampaignDetail, SuburbData, DemoSegment, PopImage, PCRConfig } from "@/components/reports/PCRPresentation/types";
 import apiClient from "@/lib/config";
 
-const SLIDE_W = 1920;
-const SLIDE_H = 1080;
+const SLIDE_W = 1241;
+const SLIDE_H = 698;
 
 type HeatmapRow = { h3_cell: string; total_impressions: number; total_ad_plays: number };
 
