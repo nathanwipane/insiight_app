@@ -70,6 +70,7 @@ export type PCRConfig = {
   campaign_id: string;
   gallery_image_ids: number[];
   cover_image_id: number | null;
+  overview_image_id: number | null;
   cpm: number | null;
 };
 

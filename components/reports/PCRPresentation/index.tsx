@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
-import { X, ChevronLeft, ChevronRight, Settings, Download } from "lucide-react";
+import { X, Settings, Download } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
 import {
@@ -36,8 +36,6 @@ export default function PCRPresentation({
   const { data: session } = useSession();
   const token = (session?.user as User)?.jwt ?? "";
 
-  const [slide, setSlide] = useState(0);
-
   // Fetch supporting data
   const { data: theme } = useSWR<OrgTheme>(
     token ? ["/v2/organisation/theme", token] : null, fetcher
@@ -67,36 +65,19 @@ export default function PCRPresentation({
     ? allPops.find(p => p.id === pcrConfig.cover_image_id) ?? allPops[0] ?? null
     : allPops[0] ?? null;
 
-  // Build slide list dynamically
-  const slides = [
-    "cover",
-    "overview",
-    "activity",
-    "audience",
-    "personas",
-    ...galleryImages.map((_, i) => `gallery-${i}`),
-    "close",
-  ];
+  const overviewImage = pcrConfig?.overview_image_id
+    ? allPops.find(p => p.id === pcrConfig.overview_image_id) ?? allPops[0] ?? null
+    : allPops[0] ?? null;
 
-  const total = slides.length;
-
-  const prev = useCallback(() => setSlide(s => Math.max(0, s - 1)), []);
-  const next = useCallback(() => setSlide(s => Math.min(total - 1, s + 1)), [total]);
-
-  // Keyboard navigation
+  // Keyboard — close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === "ArrowRight") next();
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, prev, next, onClose]);
-
-  // Reset to first slide when opened
-  useEffect(() => { if (open) setSlide(0); }, [open]);
+  }, [open, onClose]);
 
   // Prevent body scroll
   useEffect(() => {
@@ -131,28 +112,6 @@ export default function PCRPresentation({
     pcr,
     reportDate,
   };
-
-  function renderSlide() {
-    const current = slides[slide];
-    if (current === "cover") return <CoverSlide {...slideProps} heroImage={heroImage} />;
-    if (current === "overview") return <OverviewSlide {...slideProps} heroImage={heroImage} pcrConfig={pcrConfig ?? null} />;
-    if (current === "activity") return <ActivitySlide {...slideProps} suburbs={suburbs} />;
-    if (current === "audience") return <AudienceSlide {...slideProps} demographics={demographics} />;
-    if (current === "personas") return <PersonasSlide {...slideProps} />;
-    if (current === "close") return <CloseSlide {...slideProps} />;
-    if (current?.startsWith("gallery-")) {
-      const idx = parseInt(current.split("-")[1]);
-      return (
-        <GallerySlide
-          {...slideProps}
-          image={galleryImages[idx]}
-          slideNumber={idx + 1}
-          totalImages={galleryImages.length}
-        />
-      );
-    }
-    return null;
-  }
 
   return (
     <>
@@ -280,131 +239,56 @@ export default function PCRPresentation({
           </div>
         </div>
 
-        {/* Slide area — dark bg, centred 16:9 canvas */}
+        {/* Slides — stacked, scrollable */}
         <div style={{
           flex: 1,
-          minHeight: 0,
-          background: "var(--color-surface-alt)",
+          overflowY: "auto",
+          padding: "20px 300px",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px 40px",
           gap: 16,
+          background: "var(--color-surface-alt)",
         }}>
-          {/* 16:9 slide */}
-          <div style={{
-            width: "100%",
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <div style={{
-              height: "100%",
-              maxHeight: "100%",
-              aspectRatio: "16 / 9",
-              maxWidth: "100%",
-              borderRadius: 8,
-              overflow: "hidden",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-            }}>
-              {renderSlide()}
-            </div>
+          {/* Cover */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <CoverSlide {...slideProps} heroImage={heroImage} />
           </div>
 
-          {/* Navigation row */}
-          <div style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexShrink: 0,
-          }}>
-            {/* Prev */}
-            <button
-              onClick={prev}
-              disabled={slide === 0}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                height: 30,
-                padding: "0 14px",
-                fontSize: 11,
-                fontWeight: 500,
-                color: slide === 0
-                  ? "var(--color-text-muted)"
-                  : "var(--color-text-secondary)",
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-                borderRadius: 6,
-                cursor: slide === 0 ? "default" : "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <ChevronLeft size={12} /> Prev
-            </button>
+          {/* Overview */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <OverviewSlide {...slideProps} heroImage={overviewImage} pcrConfig={pcrConfig ?? null} />
+          </div>
 
-            {/* Dots + counter */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}>
-              {slides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSlide(i)}
-                  style={{
-                    width: i === slide ? 18 : 5,
-                    height: 5,
-                    borderRadius: 3,
-                    background: i === slide
-                      ? (activeTheme.primary_colour ?? "#95bbc1")
-                      : "var(--color-border)",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "width 0.2s, background 0.2s",
-                    padding: 0,
-                  }}
-                />
-              ))}
-              <span style={{
-                fontSize: 10,
-                color: "var(--color-text-muted)",
-                marginLeft: 6,
-                fontFamily: "inherit",
-              }}>
-                {slide + 1} / {total}
-              </span>
+          {/* Activity */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <ActivitySlide {...slideProps} suburbs={suburbs} />
+          </div>
+
+          {/* Audience */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <AudienceSlide {...slideProps} demographics={demographics} />
+          </div>
+
+          {/* Personas */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <PersonasSlide {...slideProps} />
+          </div>
+
+          {/* Gallery slides */}
+          {galleryImages.map((image, i) => (
+            <div key={image.id} style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+              <GallerySlide
+                {...slideProps}
+                image={image}
+                slideNumber={i + 1}
+                totalImages={galleryImages.length}
+              />
             </div>
+          ))}
 
-            {/* Next */}
-            <button
-              onClick={next}
-              disabled={slide === total - 1}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                height: 30,
-                padding: "0 14px",
-                fontSize: 11,
-                fontWeight: 500,
-                color: slide === total - 1
-                  ? "var(--color-text-muted)"
-                  : "var(--color-text-secondary)",
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-                borderRadius: 6,
-                cursor: slide === total - 1 ? "default" : "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Next <ChevronRight size={12} />
-            </button>
+          {/* Close */}
+          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+            <CloseSlide {...slideProps} />
           </div>
         </div>
       </div>
