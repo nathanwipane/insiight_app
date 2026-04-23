@@ -41,7 +41,7 @@ export default function PCRPresentation({
     token ? ["/v2/organisation/theme", token] : null, fetcher
   );
   const { data: suburbs = [] } = useSWR<SuburbData[]>(
-    token && campaignId ? [`/v2/campaign/${campaignId}/suburbs`, token] : null, fetcher
+    token && campaignId ? [`/v2/campaign/${campaignId}/suburbs?limit=5`, token] : null, fetcher
   );
   const { data: demographics = [] } = useSWR<DemoSegment[]>(
     token && campaignId ? [`/v2/campaign/${campaignId}/demographics`, token] : null, fetcher
@@ -51,6 +51,20 @@ export default function PCRPresentation({
   );
   const { data: pcrConfig } = useSWR<PCRConfig>(
     token && campaignId ? [`/v2/campaign/${campaignId}/pcr-config`, token] : null, fetcher
+  );
+
+  type HeatmapRow = {
+    h3_cell: string;
+    total_impressions: number;
+    total_ad_plays: number;
+  };
+
+  const { data: heatmapData = [] } = useSWR<HeatmapRow[]>(
+    token && campaignId
+      ? [`/v2/campaign/${campaignId}/heatmap`, token]
+      : null,
+    fetcher,
+    { refreshInterval: 3600000, revalidateOnFocus: false }
   );
 
   console.log('pcrConfig:', pcrConfig);
@@ -261,7 +275,7 @@ export default function PCRPresentation({
 
           {/* Activity */}
           <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <ActivitySlide {...slideProps} suburbs={suburbs} />
+            <ActivitySlide {...slideProps} suburbs={suburbs} heatmapData={heatmapData} />
           </div>
 
           {/* Audience */}

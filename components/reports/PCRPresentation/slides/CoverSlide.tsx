@@ -1,6 +1,7 @@
 "use client";
 
 import SlideWrapper from "../SlideWrapper";
+import SlideHeader from "../SlideHeader";
 import { SlideProps, PopImage } from "../types";
 import { formatCampaignDate } from "@/lib/campaigns";
 
@@ -32,40 +33,7 @@ export default function CoverSlide({ theme, campaign, pcr, reportDate, heroImage
         ? `${theme.font_family}, var(--font-bricolage), sans-serif`
         : "var(--font-bricolage), 'Bricolage Grotesque', sans-serif",
     }}>
-      {/* Header bar */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "2.4% 3.5%",
-        flexShrink: 0,
-      }}>
-        <div style={{
-          fontSize: 14,
-          color: "rgba(255,255,255,0.7)",
-          fontWeight: 600,
-          letterSpacing: "0.02em",
-        }}>
-          POST-CAMPAIGN REPORT
-        </div>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          fontSize: 14,
-          color: "rgba(255,255,255)",
-          fontWeight: 600,
-        }}>
-          <img
-            src="/insiight-icon-wh.svg"
-            alt="Insiight"
-            style={{
-              width: 16,
-              height: 16,
-              opacity: 1,
-            }}
-          />
-          Powered by Insiight
-        </div>
-      </div>
+      <SlideHeader theme={theme} reportDate={reportDate} />
 
       {/* Body */}
       <div style={{
@@ -133,7 +101,7 @@ export default function CoverSlide({ theme, campaign, pcr, reportDate, heroImage
                   Advertiser
                 </div>
                 <div style={{
-                  fontSize: "clamp(9px, 0.9vw, 12px)",
+                  fontSize: "clamp(9px, 0.9vw, 14px)",
                   color: textSecondary,
                 }}>
                   {campaign.advertiser_name ?? "—"}
@@ -152,7 +120,7 @@ export default function CoverSlide({ theme, campaign, pcr, reportDate, heroImage
                     Agency
                   </div>
                   <div style={{
-                    fontSize: "clamp(9px, 0.9vw, 12px)",
+                    fontSize: "clamp(9px, 0.9vw, 14px)",
                     color: textSecondary,
                   }}>
                     {campaign.agency_name}
@@ -174,7 +142,7 @@ export default function CoverSlide({ theme, campaign, pcr, reportDate, heroImage
                 Period
               </div>
               <div style={{
-                fontSize: "clamp(9px, 0.9vw, 12px)",
+                fontSize: "clamp(9px, 0.9vw, 14px)",
                 color: textSecondary,
               }}>
                 {formatCampaignDate(campaign.start_date)} – {formatCampaignDate(campaign.end_date)}
@@ -194,7 +162,7 @@ export default function CoverSlide({ theme, campaign, pcr, reportDate, heroImage
                 Region
               </div>
               <div style={{
-                fontSize: "clamp(9px, 0.9vw, 12px)",
+                fontSize: "clamp(9px, 0.9vw, 14px)",
                 color: textSecondary,
                 fontWeight: 500,
               }}>

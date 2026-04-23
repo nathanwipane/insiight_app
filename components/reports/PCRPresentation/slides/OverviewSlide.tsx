@@ -11,7 +11,6 @@ interface OverviewSlideProps extends SlideProps {
 }
 
 export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroImage, pcrConfig }: OverviewSlideProps) {
-  console.log('OverviewSlide pcrConfig:', pcrConfig);
   const primary = theme.primary_colour ?? "#95bbc1";
   const textMuted = "rgba(255,255,255,0.25)";
   const textSecondary = "rgba(255, 255, 255, 0.80)";
@@ -38,8 +37,6 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
       : []
     ),
   ];
-
-  console.log('OverviewSlide metrics:', metrics);
 
   const bullets = pcr.executive_summary
     .split(/(?<=\.)\s+/)
@@ -127,11 +124,11 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
         <div style={{
           background: "rgba(255,255,255,0.05)",
           borderRadius: 12,
-          padding: "3% 4%",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          gap: "2%",
-          marginBottom: "6%",
+          padding: "2.5% 3%",
+          display: "inline-grid",
+          gridTemplateColumns: "repeat(4, auto)",
+          gap: "0 2%",
+          marginBottom: "5%",
           flexShrink: 0,
         }}>
           {metrics.map(m => (
@@ -142,12 +139,12 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
                 textTransform: "uppercase" as const,
                 letterSpacing: "0.1em",
                 fontWeight: 600,
-                marginBottom: 8,
+                marginBottom: 6,
               }}>
                 {m.label}
               </div>
               <div style={{
-                fontSize: "clamp(20px, 3.5vw, 42px)",
+                fontSize: "clamp(16px, 2.8vw, 34px)",
                 fontWeight: 700,
                 color: m.accent ? primary : "#ffffff",
                 letterSpacing: "-0.02em",

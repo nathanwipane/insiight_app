@@ -1,40 +1,43 @@
 "use client";
 
 import SlideWrapper from "../SlideWrapper";
+import HexMap from "../HexMap";
 import { SlideProps, SuburbData } from "../types";
 
 interface ActivitySlideProps extends SlideProps {
   suburbs: SuburbData[];
+  heatmapData: { h3_cell: string; total_impressions: number; total_ad_plays: number }[];
 }
 
-export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburbs }: ActivitySlideProps) {
+export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburbs, heatmapData }: ActivitySlideProps) {
   const primary = theme.primary_colour ?? "#95bbc1";
-  const textMuted = "rgba(255,255,255,0.35)";
+  const textSecondary = "rgba(255, 255, 255, 0.80)";
+  const textMuted = "rgba(255,255,255,0.25)";
 
   const topSuburbs = suburbs.slice(0, 5);
   const maxImpressions = topSuburbs[0]?.total_impressions ?? 1;
 
-  // Mapbox static image — centred on Perth
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const mapUrl = mapboxToken
-    ? `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+${primary.replace('#','')}(115.8575,-31.9505)/115.8575,-31.9505,11,0/800x500?access_token=${mapboxToken}`
-    : null;
+  // Fix hours — stored as string, parse to float then round
+  const hoursPlayed = Math.round(parseFloat(String(campaign.total_hours_played)));
 
   return (
     <SlideWrapper theme={theme} label="Activity" reportDate={reportDate}>
-      {/* Left */}
+      {/* Left column */}
       <div style={{
         flex: "0 0 38%",
-        padding: "3.5% 2% 3.5% 3.5%",
-        display: "flex", flexDirection: "column",
+        padding: "4% 3% 4% 4%",
+        display: "flex",
+        flexDirection: "column",
       }}>
+        {/* Title */}
         <div style={{
           fontSize: "clamp(22px, 4vw, 48px)",
           fontWeight: 700,
           color: "#ffffff",
           letterSpacing: "-0.025em",
           lineHeight: 1.05,
-          marginBottom: "5%",
+          marginBottom: "6%",
+          flexShrink: 0,
         }}>
           Campaign<br />Activity
         </div>
@@ -42,30 +45,43 @@ export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburb
         {/* Assets + Hours stat box */}
         <div style={{
           background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 8, padding: "4%",
-          display: "flex", gap: "8%",
-          marginBottom: "6%", flexShrink: 0,
+          borderRadius: 10,
+          padding: "5% 6%",
+          display: "flex",
+          gap: "12%",
+          marginBottom: "8%",
+          flexShrink: 0,
         }}>
           {[
             { value: campaign.total_assets, label: "Assets" },
-            { value: Math.round(campaign.total_hours_played), label: "Hours" },
+            { value: hoursPlayed, label: "Hours" },
           ].map(({ value, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div key={label} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+            }}>
               <div style={{
-                width: 3, height: 28, borderRadius: 2,
-                background: primary, flexShrink: 0,
+                width: 10,
+                height: 60,
+                borderRadius: 10,
+                background: primary,
+                flexShrink: 0,
               }} />
               <div>
                 <div style={{
-                  fontSize: "clamp(16px, 2.5vw, 28px)",
-                  fontWeight: 700, color: "#fff",
+                  fontSize: "clamp(20px, 3vw, 36px)",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
                 }}>
                   {value}
                 </div>
                 <div style={{
-                  fontSize: "clamp(7px, 0.8vw, 9px)",
-                  color: textMuted, marginTop: 2,
+                  fontSize: 12,
+                  color: textSecondary,
+                  marginTop: 4,
                 }}>
                   {label}
                 </div>
@@ -74,41 +90,63 @@ export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburb
           ))}
         </div>
 
-        {/* Top suburbs */}
+        {/* Top suburbs label */}
         <div style={{
-          fontSize: "clamp(7px, 0.85vw, 9px)",
-          color: primary, textTransform: "uppercase",
-          letterSpacing: "0.1em", fontWeight: 600,
-          marginBottom: 8,
+          fontSize: 12,
+          color: primary,
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.1em",
+          fontWeight: 600,
+          marginBottom: 12,
+          flexShrink: 0,
         }}>
           Top Suburbs
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+
+        {/* Suburb bars */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}>
           {topSuburbs.map((s, i) => {
             const pct = Math.round((s.total_impressions / maxImpressions) * 100);
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div key={i} style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
                 <span style={{
-                  fontSize: "clamp(7px, 0.85vw, 9px)",
-                  color: "rgba(255,255,255,0.5)",
-                  width: 72, flexShrink: 0, textAlign: "right",
+                  fontSize: 14,
+                  color: textSecondary,
+                  width: 80,
+                  flexShrink: 0,
+                  textAlign: "right",
                 }}>
                   {s.suburb}
                 </span>
                 <div style={{
-                  flex: 1, height: 5,
+                  flex: 1,
+                  height: 6,
                   background: "rgba(255,255,255,0.08)",
-                  borderRadius: 3, overflow: "hidden",
+                  borderRadius: 3,
+                  overflow: "hidden",
                 }}>
                   <div style={{
-                    height: "100%", width: `${pct}%`,
-                    background: primary, borderRadius: 3,
+                    height: "100%",
+                    width: `${pct}%`,
+                    background: primary,
+                    borderRadius: 3,
+                    opacity: 1,
                   }} />
                 </div>
                 <span style={{
-                  fontSize: "clamp(7px, 0.85vw, 9px)",
+                  fontSize: 14,
                   color: i === 0 ? primary : textMuted,
-                  width: 30, flexShrink: 0,
+                  width: 36,
+                  flexShrink: 0,
+                  textAlign: "right",
                 }}>
                   {s.total_impressions}
                 </span>
@@ -121,38 +159,33 @@ export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburb
       {/* Right — map */}
       <div style={{
         flex: 1,
-        padding: "3.5% 3.5% 3.5% 0",
-        display: "flex", flexDirection: "column",
+        padding: "0% 3% 4% 2%",
+        display: "flex",
+        flexDirection: "column",
       }}>
+        {/* Map label */}
         <div style={{
-          fontSize: "clamp(7px, 0.85vw, 9px)",
-          color: primary, textTransform: "uppercase",
-          letterSpacing: "0.1em", fontWeight: 600,
-          marginBottom: 8, flexShrink: 0,
+          fontSize: 12,
+          color: primary,
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.1em",
+          fontWeight: 600,
+          marginBottom: 10,
+          flexShrink: 0,
+          paddingTop: "4%",
         }}>
           Geographic Heatmap
         </div>
+
+        {/* Map container — fills remaining height */}
         <div style={{
-          flex: 1, borderRadius: 10, overflow: "hidden",
-          background: "#1e2428",
-          border: "1px solid rgba(255,255,255,0.06)",
+          flex: 1,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "#1a1f2a",
+          minHeight: 0,
         }}>
-          {mapUrl ? (
-            <img
-              src={mapUrl}
-              alt="Geographic heatmap"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <div style={{
-              width: "100%", height: "100%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "clamp(8px, 0.9vw, 10px)",
-              color: "rgba(255,255,255,0.15)",
-            }}>
-              Map unavailable — set NEXT_PUBLIC_MAPBOX_TOKEN
-            </div>
-          )}
+          <HexMap data={heatmapData} primary={primary} />
         </div>
       </div>
     </SlideWrapper>
