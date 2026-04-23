@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { X, Settings, Download } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
+import apiClient from "@/lib/config";
 import {
   OrgTheme, PCRData, CampaignDetail,
   SuburbData, DemoSegment, PopImage, PCRConfig
@@ -70,6 +71,7 @@ export default function PCRPresentation({
   const slidesRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1241);
   const [sidePadding, setSidePadding] = useState(300);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const BASELINE_W = 1241;
   const BASELINE_H = 698;
 
@@ -118,6 +120,56 @@ export default function PCRPresentation({
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  const handleExportPdf = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+
+    try {
+      // Step 1: Get render token
+      const tokenRes = await apiClient.post(
+        '/v2/auth/render-token',
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const renderToken = tokenRes.data.data.token;
+
+      // Count total slides (5 fixed + gallery images)
+      const totalSlides = 5 + galleryImages.length + 1;
+
+      // Step 2: Generate PDF
+      const pdfRes = await apiClient.post(
+        '/v2/reports/generate-pcr-pdf',
+        {
+          campaign_id: campaignId,
+          parent_org_id: params.parent_org_id,
+          render_token: renderToken,
+          slide_count: totalSlides,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob',
+          timeout: 120000,
+        }
+      );
+
+      // Step 3: Trigger download
+      const url = URL.createObjectURL(pdfRes.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PCR_${campaignId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      alert('PDF generation failed. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -228,6 +280,8 @@ export default function PCRPresentation({
               <Settings size={11} /> Settings
             </button>
             <button
+              onClick={handleExportPdf}
+              disabled={pdfLoading}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -237,14 +291,16 @@ export default function PCRPresentation({
                 fontSize: 11,
                 fontWeight: 500,
                 color: "var(--color-surface)",
-                background: "var(--color-text)",
+                background: pdfLoading ? "var(--color-text-muted)" : "var(--color-text)",
                 border: "none",
                 borderRadius: 6,
-                cursor: "pointer",
+                cursor: pdfLoading ? "default" : "pointer",
                 fontFamily: "inherit",
+                opacity: pdfLoading ? 0.7 : 1,
               }}
             >
-              <Download size={11} /> Export PDF
+              <Download size={11} />
+              {pdfLoading ? "Generating..." : "Export PDF"}
             </button>
             <button
               onClick={onClose}
