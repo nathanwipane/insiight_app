@@ -99,15 +99,17 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
               className="b-outer"
               cx={pos.x}
               cy={pos.y}
-              r={34}
-              fill={rgba(0.7)}
+              r={28}
+              fill={primary}
+              fillOpacity={0.4}
             />
             <circle
               className="b-mid"
               cx={pos.x}
               cy={pos.y}
-              r={24}
-              fill={rgba(0.85)}
+              r={20}
+              fill={primary}
+              fillOpacity={0.65}
             />
             <circle
               cx={pos.x}
