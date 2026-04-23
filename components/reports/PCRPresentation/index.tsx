@@ -72,6 +72,19 @@ export default function PCRPresentation({
   const [containerWidth, setContainerWidth] = useState(1241);
   const [sidePadding, setSidePadding] = useState(300);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    message: string;
+    progress: number;
+    done: boolean;
+    error: boolean;
+  }>({
+    visible: false,
+    message: "",
+    progress: 0,
+    done: false,
+    error: false,
+  });
   const BASELINE_W = 1241;
   const BASELINE_H = 698;
 
@@ -124,9 +137,11 @@ export default function PCRPresentation({
   const handleExportPdf = async () => {
     if (pdfLoading) return;
     setPdfLoading(true);
+    setToast({ visible: true, message: "Preparing report...", progress: 5, done: false, error: false });
 
     try {
       // Step 1: Get render token
+      setToast(t => ({ ...t, message: "Authenticating...", progress: 15 }));
       const tokenRes = await apiClient.post(
         '/v2/auth/render-token',
         {},
@@ -134,10 +149,23 @@ export default function PCRPresentation({
       );
       const renderToken = tokenRes.data.data.token;
 
-      // Count total slides (5 fixed + gallery images)
-      const totalSlides = 5 + galleryImages.length + 1;
-
       // Step 2: Generate PDF
+      setToast(t => ({ ...t, message: "Rendering slides...", progress: 30 }));
+
+      // Simulate progress while waiting
+      const progressInterval = setInterval(() => {
+        setToast(t => ({
+          ...t,
+          progress: Math.min(t.progress + 3, 85),
+          message: t.progress < 50
+            ? "Rendering slides..."
+            : t.progress < 70
+              ? "Capturing screenshots..."
+              : "Generating PDF...",
+        }));
+      }, 1500);
+
+      const totalSlides = 5 + galleryImages.length + 1;
       const pdfRes = await apiClient.post(
         '/v2/reports/generate-pcr-pdf',
         {
@@ -153,7 +181,10 @@ export default function PCRPresentation({
         }
       );
 
+      clearInterval(progressInterval);
+
       // Step 3: Trigger download
+      setToast(t => ({ ...t, message: "Starting download...", progress: 95 }));
       const url = URL.createObjectURL(pdfRes.data);
       const a = document.createElement('a');
       a.href = url;
@@ -163,9 +194,18 @@ export default function PCRPresentation({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      setToast(t => ({ ...t, message: "Download complete!", progress: 100, done: true }));
+      setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
+
     } catch (err) {
       console.error('PDF generation failed:', err);
-      alert('PDF generation failed. Please try again.');
+      setToast(t => ({
+        ...t,
+        message: "Export failed. Please try again.",
+        error: true,
+        done: true,
+      }));
+      setTimeout(() => setToast(t => ({ ...t, visible: false })), 4000);
     } finally {
       setPdfLoading(false);
     }
@@ -507,6 +547,123 @@ export default function PCRPresentation({
           </div>
         </div>
       </div>
+
+      {/* Download toast */}
+      {toast.visible && (
+        <div style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 10000,
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: 12,
+          padding: "16px 20px",
+          width: 320,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+        }}>
+          {/* Header */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              {toast.done && !toast.error ? (
+                <div style={{
+                  width: 18, height: 18,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", flexShrink: 0,
+                }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10">
+                    <path d="M2 5l2.5 2.5L8 3"
+                      stroke="#fff" strokeWidth="1.5"
+                      strokeLinecap="round" fill="none"/>
+                  </svg>
+                </div>
+              ) : toast.error ? (
+                <div style={{
+                  width: 18, height: 18,
+                  borderRadius: "50%",
+                  background: "var(--color-error)",
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", flexShrink: 0,
+                  fontSize: 11, color: "#fff", fontWeight: 700,
+                }}>!</div>
+              ) : (
+                <div style={{
+                  width: 18, height: 18,
+                  borderRadius: "50%",
+                  border: "2px solid var(--color-border)",
+                  borderTopColor: "var(--color-text)",
+                  animation: "spin 0.8s linear infinite",
+                  flexShrink: 0,
+                }} />
+              )}
+              <span style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--color-text)",
+              }}>
+                {toast.error ? "Export Failed" : toast.done ? "Downloaded!" : "Exporting PDF"}
+              </span>
+            </div>
+            <button
+              onClick={() => setToast(t => ({ ...t, visible: false }))}
+              style={{
+                width: 20, height: 20,
+                borderRadius: 4,
+                border: "none",
+                background: "transparent",
+                color: "var(--color-text-muted)",
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex", alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Message */}
+          <div style={{
+            fontSize: 12,
+            color: "var(--color-text-secondary)",
+            marginBottom: toast.error ? 0 : 12,
+          }}>
+            {toast.message}
+          </div>
+
+          {/* Progress bar */}
+          {!toast.error && (
+            <div style={{
+              height: 4,
+              background: "var(--color-border)",
+              borderRadius: 2,
+              overflow: "hidden",
+            }}>
+              <div style={{
+                height: "100%",
+                width: `${toast.progress}%`,
+                background: toast.done
+                  ? "#22c55e"
+                  : "var(--color-text)",
+                borderRadius: 2,
+                transition: "width 0.5s ease, background 0.3s ease",
+              }} />
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }
