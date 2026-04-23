@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
@@ -67,8 +67,28 @@ export default function PCRPresentation({
     { refreshInterval: 3600000, revalidateOnFocus: false }
   );
 
-  console.log('pcrConfig:', pcrConfig);
-  console.log('pcrConfig?.cpm:', pcrConfig?.cpm);
+  const slidesRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(1241);
+  const [sidePadding, setSidePadding] = useState(300);
+  const BASELINE_W = 1241;
+  const BASELINE_H = 698;
+
+  useEffect(() => {
+    const el = slidesRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const padding = Math.max(40, Math.round((w / 1920) * 300));
+      setSidePadding(padding);
+      setContainerWidth(w - padding * 2);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
+
+  const scale = containerWidth / BASELINE_W;
 
   // Determine gallery images — use config selection if set, else all pops
   const galleryImages: PopImage[] = pcrConfig?.gallery_image_ids?.length
@@ -254,55 +274,180 @@ export default function PCRPresentation({
         </div>
 
         {/* Slides — stacked, scrollable */}
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "20px 300px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          background: "var(--color-surface-alt)",
-        }}>
+        <div
+          ref={slidesRef}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            paddingTop: 20,
+            paddingBottom: 20,
+            paddingLeft: sidePadding,
+            paddingRight: sidePadding,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            background: "var(--color-surface-alt)",
+          }}
+        >
           {/* Cover */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <CoverSlide {...slideProps} heroImage={heroImage} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <CoverSlide {...slideProps} heroImage={heroImage} />
+            </div>
           </div>
 
           {/* Overview */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <OverviewSlide {...slideProps} heroImage={overviewImage} pcrConfig={pcrConfig ?? null} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <OverviewSlide {...slideProps} heroImage={overviewImage} pcrConfig={pcrConfig ?? null} />
+            </div>
           </div>
 
           {/* Activity */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <ActivitySlide {...slideProps} suburbs={suburbs} heatmapData={heatmapData} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <ActivitySlide {...slideProps} suburbs={suburbs} heatmapData={heatmapData} />
+            </div>
           </div>
 
           {/* Audience */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <AudienceSlide {...slideProps} demographics={demographics} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <AudienceSlide {...slideProps} demographics={demographics} />
+            </div>
           </div>
 
           {/* Personas */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <PersonasSlide {...slideProps} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <PersonasSlide {...slideProps} />
+            </div>
           </div>
 
           {/* Gallery slides */}
           {galleryImages.map((image, i) => (
-            <div key={image.id} style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-              <GallerySlide
-                {...slideProps}
-                image={image}
-                slideNumber={i + 1}
-                totalImages={galleryImages.length}
-              />
+            <div key={image.id} style={{
+              width: "100%",
+              aspectRatio: "16 / 9",
+              borderRadius: 8,
+              overflow: "hidden",
+              flexShrink: 0,
+              position: "relative",
+            }}>
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: BASELINE_W,
+                height: BASELINE_H,
+                transformOrigin: "top left",
+                transform: `scale(${scale})`,
+              }}>
+                <GallerySlide
+                  {...slideProps}
+                  image={image}
+                  slideNumber={i + 1}
+                  totalImages={galleryImages.length}
+                />
+              </div>
             </div>
           ))}
 
           {/* Close */}
-          <div style={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <CloseSlide {...slideProps} />
+          <div style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            borderRadius: 8,
+            overflow: "hidden",
+            flexShrink: 0,
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: BASELINE_W,
+              height: BASELINE_H,
+              transformOrigin: "top left",
+              transform: `scale(${scale})`,
+            }}>
+              <CloseSlide {...slideProps} />
+            </div>
           </div>
         </div>
       </div>
