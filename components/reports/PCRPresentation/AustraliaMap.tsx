@@ -78,20 +78,6 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
         }}
         xmlns="http://www.w3.org/2000/svg"
       >
-        <defs>
-          <style>{`
-            @keyframes beacon-pulse {
-              0%, 100% { r: 50; opacity: 0.12; }
-              50% { r: 65; opacity: 0.04; }
-            }
-            @keyframes beacon-mid {
-              0%, 100% { r: 32; opacity: 0.25; }
-              50% { r: 42; opacity: 0.08; }
-            }
-            .b-outer { animation: beacon-pulse 4.5s ease-in-out infinite; }
-            .b-mid { animation: beacon-mid 4.5s ease-in-out infinite; }
-          `}</style>
-        </defs>
 
         {activeDots.map(([key, pos]) => (
           <g key={key}>
@@ -99,22 +85,22 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
               className="b-outer"
               cx={pos.x}
               cy={pos.y}
-              r={28}
+              r={26}
               fill={primary}
-              fillOpacity={0.4}
+              fillOpacity={0.8}
             />
             <circle
               className="b-mid"
               cx={pos.x}
               cy={pos.y}
-              r={20}
+              r={18}
               fill={primary}
-              fillOpacity={0.65}
+              fillOpacity={0.9}
             />
             <circle
               cx={pos.x}
               cy={pos.y}
-              r={14}
+              r={12}
               fill={primary}
             />
           </g>
