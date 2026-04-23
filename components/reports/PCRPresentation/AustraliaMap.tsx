@@ -81,12 +81,12 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
         <defs>
           <style>{`
             @keyframes beacon-pulse {
-              0%, 100% { r: 42; opacity: 0.5; }
-              50% { r: 28; opacity: 0.1; }
+              0%, 100% { r: 50; opacity: 0.12; }
+              50% { r: 65; opacity: 0.04; }
             }
             @keyframes beacon-mid {
-              0%, 100% { r: 28; opacity: 0.7; }
-              50% { r: 16; opacity: 0.2; }
+              0%, 100% { r: 32; opacity: 0.25; }
+              50% { r: 42; opacity: 0.08; }
             }
             .b-outer { animation: beacon-pulse 4.5s ease-in-out infinite; }
             .b-mid { animation: beacon-mid 4.5s ease-in-out infinite; }
@@ -99,15 +99,15 @@ export default function AustraliaMap({ regions, primary = "#95bbc1" }: Australia
               className="b-outer"
               cx={pos.x}
               cy={pos.y}
-              r={28}
-              fill={rgba(0.2)}
+              r={50}
+              fill={rgba(0.12)}
             />
             <circle
               className="b-mid"
               cx={pos.x}
               cy={pos.y}
-              r={20}
-              fill={rgba(0.4)}
+              r={32}
+              fill={rgba(0.25)}
             />
             <circle
               cx={pos.x}
