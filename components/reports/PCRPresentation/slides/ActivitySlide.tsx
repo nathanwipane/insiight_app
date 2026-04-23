@@ -2,6 +2,7 @@
 
 import SlideWrapper from "../SlideWrapper";
 import HexMap from "../HexMap";
+import AustraliaMap from "../AustraliaMap";
 import { SlideProps, SuburbData } from "../types";
 
 interface ActivitySlideProps extends SlideProps {
@@ -186,6 +187,8 @@ export default function ActivitySlide({ theme, campaign, pcr, reportDate, suburb
           minHeight: 0,
         }}>
           <HexMap data={heatmapData} primary={primary} />
+          {/* Switch to AustraliaMap for visualization */}
+          {/* <AustraliaMap regions={campaign.regions ?? []} primary={primary} />  */} 
         </div>
       </div>
     </SlideWrapper>
