@@ -106,7 +106,7 @@ export default function CampaignDetailPage() {
         {activeTab === "pops" && <ProofOfPlayTab />}
 
         {/* ── REPORTS TAB ── */}
-        {activeTab === "reports" && <ReportsTab />}
+        {activeTab === "reports" && <ReportsTab campaign={campaign} />}
       </div>
     </div>
   );

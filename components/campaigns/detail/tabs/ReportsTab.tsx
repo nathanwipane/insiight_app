@@ -4,13 +4,15 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
-import { BarChart2, Download, FileText } from "lucide-react";
-import { User } from "@/constants/types";
+import { BarChart2, Download, FileText, Settings } from "lucide-react";
+import { User, CampaignDetailV2 } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import EmptyState from "@/components/ui/EmptyState";
 import Skeleton from "@/components/ui/Skeleton";
+import PCRPresentation from "@/components/reports/PCRPresentation";
+import PCRSettingsModal from "@/components/reports/PCRSettingsModal";
 
 type AIInsightsV2 = {
   pcr: {
@@ -38,7 +40,11 @@ type AIInsightsV2 = {
   }[];
 };
 
-export default function ReportsTab() {
+interface ReportsTabProps {
+  campaign: CampaignDetailV2 | null;
+}
+
+export default function ReportsTab({ campaign }: ReportsTabProps) {
   const params     = useParams();
   const campaignId = params.campaign_id as string;
   const { data: session } = useSession();
@@ -46,6 +52,7 @@ export default function ReportsTab() {
 
   const [pcrModal, setPcrModal] = useState<'presentation' | 'newsletter' | null>(null);
   const [weeklyViewId, setWeeklyViewId] = useState<number | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { data: insightsData, isLoading } = useSWR<AIInsightsV2>(
     !!token && !!campaignId
@@ -121,6 +128,21 @@ export default function ReportsTab() {
                 <span style={{ fontSize: 10, color: "var(--color-text-muted)" }}>
                   Generated {new Date(pcr.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
                 </span>
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  style={{
+                    display: "inline-flex", alignItems: "center",
+                    justifyContent: "center",
+                    width: 28, height: 28, borderRadius: 6,
+                    border: "1px solid var(--color-border)",
+                    background: "var(--color-surface)",
+                    color: "var(--color-text-muted)",
+                    cursor: "pointer", flexShrink: 0,
+                  }}
+                  title="Presentation Settings"
+                >
+                  <Settings size={12} />
+                </button>
                 <Button variant="primary" size="sm" onClick={() => setPcrModal('presentation')}>
                   View Presentation
                 </Button>
@@ -221,16 +243,32 @@ export default function ReportsTab() {
         </div>
       </div>
 
-      <Modal
-        open={pcrModal === 'presentation' && !!pcr}
-        onClose={() => setPcrModal(null)}
-        title="PCR Presentation — coming soon"
-        maxWidth={800}
-      >
-        <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
-          Content coming soon.
-        </div>
-      </Modal>
+      {pcrModal === 'presentation' && pcr && insightsData ? (
+        <PCRPresentation
+          pcr={pcr}
+          campaign={{
+            campaign_name: campaign?.campaign_name ?? "—",
+            advertiser_name: campaign?.advertiser_name ?? null,
+            agency_name: campaign?.agency_name ?? null,
+            start_date: campaign?.start_date ?? pcr.week_end_date,
+            end_date: campaign?.end_date ?? pcr.week_end_date,
+            regions: campaign?.regions ?? [],
+            total_impressions: campaign?.total_impressions ?? 0,
+            reach: campaign?.reach ?? 0,
+            frequency: campaign?.frequency ?? 0,
+            total_ad_plays: campaign?.total_ad_plays ?? 0,
+            avg_daily_impressions: campaign?.avg_daily_impressions ?? 0,
+            total_assets: campaign?.total_assets ?? 0,
+            total_hours_played: campaign?.total_hours_played ?? 0,
+          }}
+          open={pcrModal === 'presentation'}
+          onClose={() => setPcrModal(null)}
+          onOpenSettings={() => {
+            setPcrModal(null);
+            setSettingsOpen(true);
+          }}
+        />
+      ) : null}
 
       <Modal
         open={pcrModal === 'newsletter' && !!pcr}
@@ -253,6 +291,11 @@ export default function ReportsTab() {
           Content coming soon.
         </div>
       </Modal>
+
+      <PCRSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }
