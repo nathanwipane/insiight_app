@@ -18,9 +18,11 @@ export default function PersonasSlide({ theme, campaign, pcr, reportDate }: Slid
         position: "relative", overflow: "hidden",
       }}>
         <div style={{
-          fontSize: "clamp(18px, 3vw, 36px)",
-          fontWeight: 700, color: "#fff",
-          letterSpacing: "-0.02em", lineHeight: 1.1,
+          fontSize: "clamp(22px, 4vw, 48px)",
+          fontWeight: 700,
+          color: "#ffffff",
+          letterSpacing: "-0.025em",
+          lineHeight: 1.05,
           marginBottom: "4%",
         }}>
           Top Audience<br />Personas

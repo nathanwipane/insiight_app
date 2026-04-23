@@ -39,7 +39,7 @@ export default function PCRPresentation({
   const [slide, setSlide] = useState(0);
 
   // Fetch supporting data
-  const { data: themeResp } = useSWR<{ status: boolean; data: OrgTheme }>(
+  const { data: theme } = useSWR<OrgTheme>(
     token ? ["/v2/organisation/theme", token] : null, fetcher
   );
   const { data: suburbsResp } = useSWR<{ status: boolean; data: SuburbData[] }>(
@@ -55,7 +55,6 @@ export default function PCRPresentation({
     token && campaignId ? [`/v2/campaign/${campaignId}/pcr-config`, token] : null, fetcher
   );
 
-  const theme = themeResp?.data;
   const suburbs = suburbsResp?.data ?? [];
   const demographics = demoResp?.data ?? [];
   const allPops = popsResp?.data ?? [];
@@ -66,7 +65,9 @@ export default function PCRPresentation({
     ? allPops.filter(p => pcrConfig.gallery_image_ids.includes(p.id))
     : allPops;
 
-  const heroImage = allPops[0] ?? null;
+  const heroImage = pcrConfig?.cover_image_id
+    ? allPops.find(p => p.id === pcrConfig.cover_image_id) ?? allPops[0] ?? null
+    : allPops[0] ?? null;
 
   // Build slide list dynamically
   const slides = [
@@ -114,7 +115,6 @@ export default function PCRPresentation({
     secondary_colour: "#ffffff",
     presentation_bg_colour: "#1a1a1a",
     font_family: null,
-    cover_tagline: null,
     website: null,
     brand_statement: null,
     phone_numbers: [],
@@ -123,12 +123,21 @@ export default function PCRPresentation({
 
   const reportDate = pcr.created_at;
 
-  const slideProps = { theme: activeTheme, campaign, pcr, reportDate };
+  const cleanCampaignName = campaign.campaign_name.includes("|")
+    ? campaign.campaign_name.split("|")[1]?.trim() ?? campaign.campaign_name
+    : campaign.campaign_name;
+
+  const slideProps = {
+    theme: activeTheme,
+    campaign: { ...campaign, campaign_name: cleanCampaignName },
+    pcr,
+    reportDate,
+  };
 
   function renderSlide() {
     const current = slides[slide];
     if (current === "cover") return <CoverSlide {...slideProps} heroImage={heroImage} />;
-    if (current === "overview") return <OverviewSlide {...slideProps} heroImage={heroImage} />;
+    if (current === "overview") return <OverviewSlide {...slideProps} heroImage={heroImage} pcrConfig={pcrConfig ?? null} />;
     if (current === "activity") return <ActivitySlide {...slideProps} suburbs={suburbs} />;
     if (current === "audience") return <AudienceSlide {...slideProps} demographics={demographics} />;
     if (current === "personas") return <PersonasSlide {...slideProps} />;

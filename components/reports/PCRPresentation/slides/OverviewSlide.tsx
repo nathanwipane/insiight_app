@@ -1,32 +1,42 @@
 "use client";
 
 import SlideWrapper from "../SlideWrapper";
-import { SlideProps, PopImage } from "../types";
+import { SlideProps, PopImage, PCRConfig } from "../types";
 import { formatImpressions } from "@/lib/campaigns";
 
 interface OverviewSlideProps extends SlideProps {
   heroImage: PopImage | null;
+  pcrConfig: PCRConfig | null;
 }
 
-export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroImage }: OverviewSlideProps) {
+export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroImage, pcrConfig }: OverviewSlideProps) {
   const primary = theme.primary_colour ?? "#95bbc1";
-  const bg = theme.presentation_bg_colour ?? "#1a1a1a";
-  const textMuted = "rgba(255,255,255,0.35)";
-  const textSecondary = "rgba(255,255,255,0.6)";
-
-  // CPM calculation — placeholder if not available
-  const cpm = campaign.total_impressions > 0
-    ? ((campaign.reach / campaign.total_impressions) * 1000).toFixed(2)
-    : "—";
+  const textMuted = "rgba(255,255,255,0.25)";
+  const textSecondary = "rgba(255, 255, 255, 0.80)";
 
   const metrics = [
-    { label: "Impressions", value: formatImpressions(campaign.total_impressions), accent: true },
-    { label: "Reach",       value: formatImpressions(campaign.reach) },
-    { label: "Frequency",   value: `${Number(campaign.frequency).toFixed(2)}x` },
-    { label: "Ad Plays",    value: campaign.total_ad_plays.toLocaleString() },
+    {
+      label: "Impressions",
+      value: formatImpressions(campaign.total_impressions),
+      accent: true
+    },
+    {
+      label: "Reach",
+      value: formatImpressions(campaign.reach)
+    },
+    {
+      label: "Frequency",
+      value: `${Number(campaign.frequency).toFixed(2)}x`
+    },
+    ...(pcrConfig?.cpm !== null && pcrConfig?.cpm !== undefined
+      ? [{
+          label: "CPM",
+          value: `$${Number(pcrConfig.cpm).toFixed(2)}`
+        }]
+      : []
+    ),
   ];
 
-  // Split executive summary into bullet points on ". " boundaries
   const bullets = pcr.executive_summary
     .split(/(?<=\.)\s+/)
     .filter(Boolean)
@@ -36,16 +46,15 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
     <SlideWrapper theme={theme} label="Overview" reportDate={reportDate}>
       {/* Left — PoP image */}
       <div style={{
-        flex: "0 0 40%",
-        padding: "3.5% 2% 3.5% 3.5%",
+        flex: "0 0 50%",
+        padding: "0% 2% 4% 3.5%",
       }}>
         <div style={{
           width: "100%",
           height: "100%",
-          borderRadius: 10,
+          borderRadius: 16,
           overflow: "hidden",
           background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.06)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -54,11 +63,36 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
             <img
               src={heroImage.url}
               alt={heroImage.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
             />
           ) : (
-            <div style={{ fontSize: "clamp(8px,0.9vw,10px)", color: "rgba(255,255,255,0.15)" }}>
-              No image
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="3"
+                  stroke="rgba(255,255,255,0.1)" strokeWidth="1.5"/>
+                <circle cx="8.5" cy="8.5" r="1.5"
+                  fill="rgba(255,255,255,0.1)"/>
+                <path d="M3 15l5-5 4 4 3-3 6 6"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeWidth="1.5" strokeLinecap="round"
+                  strokeLinejoin="round"/>
+              </svg>
+              <span style={{
+                fontSize: 12,
+                color: "rgba(255,255,255,0.12)",
+              }}>
+                No image
+              </span>
             </div>
           )}
         </div>
@@ -67,16 +101,20 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
       {/* Right — metrics + summary */}
       <div style={{
         flex: 1,
-        padding: "3.5% 3.5% 3.5% 2%",
+        padding: "4% 3.5% 4% 2%",
         display: "flex",
         flexDirection: "column",
       }}>
+
+        {/* Title */}
         <div style={{
-          fontSize: "clamp(16px, 2.8vw, 32px)",
+          fontSize: "clamp(22px, 4vw, 48px)",
           fontWeight: 700,
-          color: "#fff",
-          letterSpacing: "-0.02em",
-          marginBottom: "4%",
+          color: "#ffffff",
+          letterSpacing: "-0.025em",
+          lineHeight: 1.05,
+          marginBottom: "5%",
+          flexShrink: 0,
         }}>
           Campaign Overview
         </div>
@@ -84,28 +122,30 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
         {/* Metrics card */}
         <div style={{
           background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 8,
+          borderRadius: 12,
           padding: "3% 4%",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr 1fr",
           gap: "2%",
-          marginBottom: "4%",
+          marginBottom: "6%",
           flexShrink: 0,
         }}>
           {metrics.map(m => (
             <div key={m.label}>
               <div style={{
-                fontSize: "clamp(7px, 0.8vw, 9px)",
-                color: textMuted,
-                marginBottom: 6,
+                fontSize: 12,
+                color: primary,
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.1em",
+                fontWeight: 600,
+                marginBottom: 8,
               }}>
                 {m.label}
               </div>
               <div style={{
-                fontSize: "clamp(14px, 2.8vw, 32px)",
+                fontSize: "clamp(20px, 3.5vw, 42px)",
                 fontWeight: 700,
-                color: m.accent ? primary : "#fff",
+                color: m.accent ? primary : "#ffffff",
                 letterSpacing: "-0.02em",
                 lineHeight: 1,
               }}>
@@ -115,28 +155,41 @@ export default function OverviewSlide({ theme, campaign, pcr, reportDate, heroIm
           ))}
         </div>
 
-        {/* Executive summary */}
+        {/* Executive summary label */}
         <div style={{
-          fontSize: "clamp(7px, 0.85vw, 9px)",
+          fontSize: 12,
           color: primary,
-          textTransform: "uppercase",
+          textTransform: "uppercase" as const,
           letterSpacing: "0.1em",
           fontWeight: 600,
-          marginBottom: 10,
+          marginBottom: 12,
+          flexShrink: 0,
         }}>
           Executive Summary
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+
+        {/* Bullets */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}>
           {bullets.map((b, i) => (
-            <div key={i} style={{ display: "flex", gap: 8 }}>
-              <span style={{
-                color: primary,
-                fontSize: "clamp(7px, 0.8vw, 9px)",
+            <div key={i} style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-start",
+            }}>
+              <div style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: primary,
                 flexShrink: 0,
-                marginTop: 1,
-              }}>●</span>
+                marginTop: 4,
+              }} />
               <span style={{
-                fontSize: "clamp(7px, 0.9vw, 10px)",
+                fontSize: 12,
                 color: textSecondary,
                 lineHeight: 1.6,
               }}>

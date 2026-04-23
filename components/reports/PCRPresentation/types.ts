@@ -5,7 +5,6 @@ export type OrgTheme = {
   secondary_colour: string;
   presentation_bg_colour: string;
   font_family: string | null;
-  cover_tagline: string | null;
   website: string | null;
   brand_statement: string | null;
   phone_numbers: { label: string; number: string }[];
@@ -70,6 +69,8 @@ export type PopImage = {
 export type PCRConfig = {
   campaign_id: string;
   gallery_image_ids: number[];
+  cover_image_id: number | null;
+  cpm: number | null;
 };
 
 export type SlideProps = {

@@ -51,6 +51,9 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
   const [themeEdit, setThemeEdit] = useState<Partial<OrgTheme>>({});
   const [phoneNumbers, setPhoneNumbers] = useState<{ label: string; number: string }[]>([]);
   const [selectedImageIds, setSelectedImageIds] = useState<number[]>([]);
+  const [coverImageId, setCoverImageId] = useState<number | null>(null);
+  const [overviewImageId, setOverviewImageId] = useState<number | null>(null);
+  const [cpm, setCpm] = useState<string>("");
 
   // Sync from fetched data
   useEffect(() => {
@@ -62,7 +65,6 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
       presentation_bg_colour: theme.presentation_bg_colour,
       website: theme.website ?? "",
       brand_statement: theme.brand_statement ?? "",
-      cover_tagline: theme.cover_tagline ?? "",
       considerations: theme.considerations ?? "",
     });
     setPhoneNumbers(theme.phone_numbers ?? []);
@@ -71,6 +73,10 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
   useEffect(() => {
     if (!pcrConfig) return;
     setSelectedImageIds(pcrConfig.gallery_image_ids ?? []);
+    setCoverImageId(pcrConfig.cover_image_id ?? null);
+    setCpm(pcrConfig.cpm !== null && pcrConfig.cpm !== undefined
+      ? String(pcrConfig.cpm)
+      : "");
   }, [pcrConfig]);
 
   // Close on escape
@@ -127,7 +133,11 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ gallery_image_ids: selectedImageIds }),
+            body: JSON.stringify({
+              gallery_image_ids: selectedImageIds,
+              cover_image_id: coverImageId,
+              cpm: cpm !== "" ? parseFloat(cpm) : null,
+            }),
           }
         );
         mutate([`/v2/campaign/${campaignId}/pcr-config`, token]);
@@ -489,17 +499,6 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>Cover Tagline</label>
-                <input
-                  type="text"
-                  value={(themeEdit.cover_tagline as string) ?? ""}
-                  onChange={e => handleThemeChange("cover_tagline", e.target.value)}
-                  style={inputStyle}
-                  placeholder="e.g. Powered by Acme Media"
-                />
-              </div>
-
-              <div style={fieldStyle}>
                 <label style={labelStyle}>Brand Statement</label>
                 <textarea
                   value={(themeEdit.brand_statement as string) ?? ""}
@@ -597,6 +596,256 @@ export default function PCRSettingsModal({ open, onClose }: PCRSettingsModalProp
           {/* ── CAMPAIGN CONTROLS TAB ── */}
           {activeTab === "controls" && (
             <div>
+              {/* CPM */}
+              <div style={{
+                fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: 4,
+              }}>
+                CPM
+              </div>
+              <div style={{
+                fontSize: 11, color: "var(--color-text-secondary)",
+                marginBottom: 12, lineHeight: 1.5,
+              }}>
+                Set the campaign CPM to display on the overview slide.
+                Leave blank to hide.
+              </div>
+              <div style={{ ...fieldStyle, marginBottom: 24 }}>
+                <label style={labelStyle}>CPM ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cpm}
+                  onChange={e => setCpm(e.target.value)}
+                  style={inputStyle}
+                  placeholder="e.g. 4.58"
+                />
+              </div>
+
+              <div style={{
+                height: 1,
+                background: "var(--color-border)",
+                marginBottom: 20,
+              }} />
+
+              {/* Cover Image */}
+              <div style={{
+                fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: 4,
+              }}>
+                Cover Image
+              </div>
+              <div style={{
+                fontSize: 11, color: "var(--color-text-secondary)",
+                marginBottom: 16, lineHeight: 1.5,
+              }}>
+                Select the hero image shown on the cover slide.
+              </div>
+
+              {allPops.length === 0 ? (
+                <div style={{
+                  padding: "20px 24px",
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 8,
+                  marginBottom: 24,
+                }}>
+                  No proof of play images uploaded yet.
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 8,
+                  marginBottom: 24,
+                }}>
+                  {allPops.map(pop => {
+                    const selected = coverImageId === pop.id;
+                    return (
+                      <div
+                        key={pop.id}
+                        onClick={() => setCoverImageId(
+                          selected ? null : pop.id
+                        )}
+                        style={{
+                          position: "relative",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          border: selected
+                            ? "2px solid var(--color-text)"
+                            : "2px solid var(--color-border)",
+                          cursor: "pointer",
+                          aspectRatio: "16 / 9",
+                        }}
+                      >
+                        <img
+                          src={pop.url}
+                          alt={pop.title}
+                          style={{
+                            width: "100%", height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        {selected && (
+                          <div style={{
+                            position: "absolute",
+                            top: 6, right: 6,
+                            width: 18, height: 18,
+                            borderRadius: "50%",
+                            background: "var(--color-text)",
+                            display: "flex", alignItems: "center",
+                            justifyContent: "center",
+                          }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10">
+                              <path d="M2 5l2.5 2.5L8 3"
+                                stroke="var(--color-surface)"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                fill="none"/>
+                            </svg>
+                          </div>
+                        )}
+                        {/* Cover badge */}
+                        <div style={{
+                          position: "absolute",
+                          bottom: 6, left: 6,
+                          fontSize: 9, fontWeight: 600,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: selected
+                            ? "var(--color-text)"
+                            : "rgba(0,0,0,0.5)",
+                          color: "var(--color-surface)",
+                        }}>
+                          {selected ? "Cover" : ""}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{
+                height: 1,
+                background: "var(--color-border)",
+                marginBottom: 20,
+              }} />
+
+              {/* Overview Image */}
+              <div style={{
+                fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: 4,
+              }}>
+                Overview Image
+              </div>
+              <div style={{
+                fontSize: 11, color: "var(--color-text-secondary)",
+                marginBottom: 16, lineHeight: 1.5,
+              }}>
+                Select the image shown on the overview slide.
+                Defaults to the first available image if not set.
+              </div>
+
+              {allPops.length === 0 ? (
+                <div style={{
+                  padding: "20px 24px",
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 8,
+                  marginBottom: 24,
+                }}>
+                  No proof of play images uploaded yet.
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 8,
+                  marginBottom: 24,
+                }}>
+                  {allPops.map(pop => {
+                    const selected = overviewImageId === pop.id;
+                    return (
+                      <div
+                        key={pop.id}
+                        onClick={() => setOverviewImageId(
+                          selected ? null : pop.id
+                        )}
+                        style={{
+                          position: "relative",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          border: selected
+                            ? "2px solid var(--color-text)"
+                            : "2px solid var(--color-border)",
+                          cursor: "pointer",
+                          aspectRatio: "16 / 9",
+                        }}
+                      >
+                        <img
+                          src={pop.url}
+                          alt={pop.title}
+                          style={{
+                            width: "100%", height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        {selected && (
+                          <div style={{
+                            position: "absolute",
+                            top: 6, right: 6,
+                            width: 18, height: 18,
+                            borderRadius: "50%",
+                            background: "var(--color-text)",
+                            display: "flex", alignItems: "center",
+                            justifyContent: "center",
+                          }}>
+                            <svg width="10" height="10" viewBox="0 0 10 10">
+                              <path d="M2 5l2.5 2.5L8 3"
+                                stroke="var(--color-surface)"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                fill="none"/>
+                            </svg>
+                          </div>
+                        )}
+                        <div style={{
+                          position: "absolute",
+                          bottom: 6, left: 6,
+                          fontSize: 9, fontWeight: 600,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: selected
+                            ? "var(--color-text)"
+                            : "rgba(0,0,0,0.5)",
+                          color: "var(--color-surface)",
+                        }}>
+                          {selected ? "Overview" : ""}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Divider before gallery section */}
+              <div style={{
+                height: 1,
+                background: "var(--color-border)",
+                marginBottom: 20,
+              }} />
+
               <div style={{
                 fontSize: 10, fontWeight: 600,
                 letterSpacing: "0.08em", textTransform: "uppercase",
