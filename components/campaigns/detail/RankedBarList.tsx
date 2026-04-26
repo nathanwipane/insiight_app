@@ -44,33 +44,20 @@ export default function RankedBarList({
         return (
           <div key={item.label + i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
 
-            {/* Rank number or fixed label */}
-            {showRank && (
-              <span style={{
-                fontSize: 10,
-                color: "var(--color-text-secondary)",
-                width: labelWidth ?? 16,
-                textAlign: "right",
-                flexShrink: 0,
-              }}>
-                {i + 1}
-              </span>
-            )}
-
             {/* Bar + labels */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                <span style={{ fontSize: 11, color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 8 }}>
                   {item.label}
                   {item.sublabel && (
                     <span style={{ color: "var(--color-text-muted)", fontWeight: 400 }}> · {item.sublabel}</span>
                   )}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-text)", flexShrink: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text)", flexShrink: 0 }}>
                   {item.displayValue}{item.suffix}
                 </span>
               </div>
-              <div style={{ height: 3, background: "var(--color-border-subtle)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: 6, background: "var(--color-border-subtle)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99 }} />
               </div>
             </div>
