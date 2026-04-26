@@ -96,7 +96,12 @@ export default function CampaignDetailPage() {
 
             {/* Inner tab content */}
             {innerTab === "performance" && <CampaignPerformanceTab />}
-            {innerTab === "audience"    && <AudienceInsightsTab />}
+            {innerTab === "audience"    && (
+              <AudienceInsightsTab
+                impressions={campaign?.total_impressions ?? 0}
+                campaign={campaign}
+              />
+            )}
             {innerTab === "creative"    && <CreativeBreakdownTab />}
             {innerTab === "ai"          && <InsightsAITab aiOverview={ai} />}
           </>

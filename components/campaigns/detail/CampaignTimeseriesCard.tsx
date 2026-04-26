@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
+import ChartTooltip from "@/components/campaigns/detail/ChartTooltip";
 
 type TimeseriesRowV2 = { play_date: string; impressions: number; reach: number; ad_plays: number };
 
@@ -70,7 +71,7 @@ export default function CampaignTimeseriesCard() {
           ].map(({ color, label }) => (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 20, height: 2, background: color, borderRadius: 1 }} />
-              <span style={{ fontSize: 10, color: "var(--color-text-secondary)" }}>{label}</span>
+              <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{label}</span>
             </div>
           ))}
         </div>
@@ -106,7 +107,22 @@ export default function CampaignTimeseriesCard() {
                   tickLine={false} axisLine={false}
                   tickFormatter={(v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
                 />
-                <Tooltip />
+                <Tooltip
+                  content={(props: any) => (
+                    <ChartTooltip
+                      {...props}
+                      title={props.label}
+                      formatter={(payload) =>
+                        payload.map((p: any) => ({
+                          label: p.name,
+                          value: p.value?.toLocaleString() ?? "0",
+                          color: p.stroke,
+                          indicator: "line",
+                        }))
+                      }
+                    />
+                  )}
+                />
                 <Area
                   type="monotone" dataKey="impressions" name="Impressions"
                   stroke="var(--color-primary)" strokeWidth={1.5}

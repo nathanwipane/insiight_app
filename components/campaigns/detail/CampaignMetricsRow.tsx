@@ -86,10 +86,10 @@ export default function CampaignMetricsRow({ metrics, isLoading, aiOverview }: C
           padding: "10px 20px",
           display: "flex", alignItems: "flex-start", gap: 10,
         }}>
-          <Wand2 size={13} style={{ color: "#9333ea", flexShrink: 0, marginTop: 0 }} />
+          <Wand2 size={13} style={{ color: "var(--brand-primary)", flexShrink: 0, marginTop: 0 }} />
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "0.08em", flexShrink: 0 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--brand-primary)", textTransform: "uppercase", letterSpacing: "0.08em", flexShrink: 0 }}>
                 AI Summary
               </span>
             </div>
