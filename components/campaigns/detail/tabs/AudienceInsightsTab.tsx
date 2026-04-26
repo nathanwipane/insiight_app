@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
@@ -8,12 +8,22 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell, Legend, ReferenceLine
 } from "recharts";
+import { Eye, EyeOff, Settings2, ChevronDown } from "lucide-react";
 import { User } from "@/constants/types";
 import { fetcher } from "@/lib/swrFetchers";
 import SectionCard from "@/components/campaigns/detail/SectionCard";
 import RankedBarList, { RankedBarItem } from "@/components/campaigns/detail/RankedBarList";
 import IndexChart from "@/components/campaigns/detail/IndexChart";
 import ChartTooltip from "@/components/campaigns/detail/ChartTooltip";
+import { useCampaignViewPreferences } from "@/hooks/useCampaignViewPreferences";
+import { toast } from "sonner";
+
+const SEGMENT_LABELS: Record<string, string> = {
+  age: "Age", education: "Education", gender: "Gender",
+  hh_income: "Household Income", income: "Personal Income",
+  industry: "Industry", occupation: "Occupation",
+  property: "Property", tenure: "Tenure",
+};
 
 // ── Chart style constants ─────────────────────────────────────────
 const GRID_STYLE    = { strokeDasharray: "3 3" as const, stroke: "var(--color-border-subtle)", vertical: false as const };
@@ -65,6 +75,94 @@ function findSegment(data: DemoSegment[] | undefined, type: string) {
   return data?.find(s => s.segment_type === type)?.data ?? [];
 }
 
+function EditToggleRow({
+  label,
+  value,
+  isHidden,
+  onToggle,
+  meta,
+}: {
+  label: string;
+  value?: string;
+  isHidden: boolean;
+  onToggle: () => void;
+  meta?: string;
+}) {
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "6px 4px",
+        cursor: "pointer",
+        borderRadius: 6,
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={e =>
+        (e.currentTarget.style.background = "var(--color-surface-alt)")
+      }
+      onMouseLeave={e =>
+        (e.currentTarget.style.background = "transparent")
+      }
+    >
+      {/* Checkbox */}
+      <div style={{
+        width: 16,
+        height: 16,
+        borderRadius: 4,
+        border: `1.5px solid ${!isHidden ? "var(--color-text)" : "var(--color-border)"}`,
+        background: !isHidden ? "var(--color-text)" : "transparent",
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.15s",
+      }}>
+        {!isHidden && (
+          <svg width="9" height="9" viewBox="0 0 9 9">
+            <path
+              d="M1.5 4.5l2 2 4-4"
+              stroke="var(--color-surface)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        )}
+      </div>
+
+      {/* Label */}
+      <span style={{
+        flex: 1,
+        fontSize: 12,
+        color: isHidden
+          ? "var(--color-text-muted)"
+          : "var(--color-text-secondary)",
+        minWidth: 0,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}>
+        {label}
+      </span>
+
+      {/* Value/meta */}
+      {(value ?? meta) && (
+        <span style={{
+          fontSize: 11,
+          color: "var(--color-text-secondary)",
+          flexShrink: 0,
+        }}>
+          {value ?? meta}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Loading skeleton ──────────────────────────────────────────────
 function SkeletonRows({ count = 6 }: { count?: number }) {
   return (
@@ -99,6 +197,11 @@ export default function AudienceInsightsTab({
 
   const loading = isLoading;
 
+  const { preferences, updatePreference } = useCampaignViewPreferences(campaignId);
+  const [editingOccupation, setEditingOccupation] = useState(false);
+  const [editingOverIndexed, setEditingOverIndexed] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+
   // ── Derived data ────────────────────────────────────────────────
   const genderSegment = findSegment(demographicsData, 'gender');
   const genderItems: RankedBarItem[] = useMemo(() => {
@@ -109,18 +212,40 @@ export default function AudienceInsightsTab({
     })).sort((a, b) => b.value - a.value);
   }, [genderSegment]);
 
-  const overIndexedItems: { label: string; index: number }[] = useMemo(() => {
+  const allOverIndexedItems = useMemo(() => {
     if (!demographicsData) return [];
     return demographicsData
-      .flatMap(s => s.data.map(d => ({ ...d, segment_type: s.segment_type })))
-      .filter(d => d.index > 110)
-      .sort((a, b) => b.index - a.index)
-      .slice(0, 5)
-      .map(d => ({
+      .flatMap(s => s.data.map(d => ({
         label: d.label,
         index: d.index,
-      }));
+        segment_type: s.segment_type,
+      })))
+      .sort((a, b) => b.index - a.index);
   }, [demographicsData]);
+
+  const overIndexedItems = useMemo(() => {
+    if (editingOverIndexed) return allOverIndexedItems.map(d => ({
+      label: d.label, index: d.index,
+    }));
+    const visible = preferences.over_indexed;
+    if (visible === undefined) {
+      return allOverIndexedItems
+        .filter(d => d.index > 110)
+        .slice(0, 5)
+        .map(d => ({ label: d.label, index: d.index }));
+    }
+    return allOverIndexedItems
+      .filter(d => visible.includes(d.label))
+      .map(d => ({ label: d.label, index: d.index }));
+  }, [allOverIndexedItems, preferences.over_indexed, editingOverIndexed]);
+
+  useEffect(() => {
+    if (editingOverIndexed && !selectedSegment) {
+      const firstSegment = allOverIndexedItems[0]?.segment_type ?? null;
+      setSelectedSegment(firstSegment);
+    }
+    if (!editingOverIndexed) setSelectedSegment(null);
+  }, [editingOverIndexed, allOverIndexedItems]);
 
   const ageChartData = useMemo(() => {
     const raw = findSegment(demographicsData, 'age');
@@ -154,16 +279,24 @@ export default function AudienceInsightsTab({
     });
   }, [demographicsData, impressions]);
 
-  const occupationItems: RankedBarItem[] = useMemo(() => {
+  const allOccupationItems: RankedBarItem[] = useMemo(() => {
     return findSegment(demographicsData, 'occupation')
       .sort((a, b) => b.proportion - a.proportion)
-      .slice(0, 6)
       .map(d => ({
         label: d.label,
         value: d.proportion,
         displayValue: Math.round(d.proportion * impressions).toLocaleString(),
       }));
-  }, [demographicsData]);
+  }, [demographicsData, impressions]);
+
+  const occupationItems = useMemo(() => {
+    if (editingOccupation) return allOccupationItems;
+    const visible = preferences.occupation;
+    if (visible === undefined) {
+      return allOccupationItems.slice(0, 6);
+    }
+    return allOccupationItems.filter(o => visible.includes(o.label));
+  }, [allOccupationItems, preferences.occupation, editingOccupation]);
 
   const educationItems: RankedBarItem[] = useMemo(() => {
     return findSegment(demographicsData, 'education')
@@ -296,8 +429,148 @@ export default function AudienceInsightsTab({
         <SectionCard
           title="Over-Indexed Audiences"
           subtitle="Segments performing above city average (100)"
+          action={
+            <button
+              onClick={() => setEditingOverIndexed(v => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                fontSize: 11, fontWeight: 500,
+                color: editingOverIndexed ? "var(--color-text)" : "var(--color-text-muted)",
+                background: editingOverIndexed ? "var(--color-surface-alt)" : "transparent",
+                border: "1px solid var(--color-border)",
+                borderRadius: 6, padding: "3px 8px",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              <Settings2 size={11} />
+              {editingOverIndexed ? "Done" : "Manage"}
+            </button>
+          }
         >
-          {loading ? <SkeletonRows count={5} /> : (
+          {loading ? <SkeletonRows count={5} /> : editingOverIndexed ? (
+            (() => {
+              const defaultVisible = allOverIndexedItems
+                .filter(d => d.index > 110)
+                .slice(0, 5)
+                .map(d => d.label);
+              const visible = preferences.over_indexed ?? defaultVisible;
+              const grouped = allOverIndexedItems.reduce((acc, item) => {
+                if (!acc[item.segment_type]) acc[item.segment_type] = [];
+                acc[item.segment_type].push(item);
+                return acc;
+              }, {} as Record<string, typeof allOverIndexedItems>);
+
+              const selectedItems = selectedSegment
+                ? (grouped[selectedSegment] ?? [])
+                : [];
+
+              return (
+                <div style={{
+                  display: "flex",
+                  gap: 0,
+                  height: 320,
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                }}>
+                  {/* Left — category list */}
+                  <div style={{
+                    width: 200,
+                    flexShrink: 0,
+                    borderRight: "1px solid var(--color-border)",
+                    overflowY: "auto",
+                    background: "var(--color-surface-alt)",
+                  }}>
+                    {Object.entries(grouped).map(([segType, items]) => {
+                      const visibleCount = items.filter(i => visible.includes(i.label)).length;
+                      const isSelected = selectedSegment === segType;
+                      return (
+                        <div
+                          key={segType}
+                          onClick={() => setSelectedSegment(segType)}
+                          style={{
+                            padding: "9px 12px",
+                            cursor: "pointer",
+                            background: isSelected
+                              ? "var(--color-surface)"
+                              : "transparent",
+                            borderLeft: isSelected
+                              ? "2px solid var(--color-text)"
+                              : "2px solid transparent",
+                            transition: "all 0.1s",
+                          }}
+                        >
+                          <div style={{
+                            fontSize: 12,
+                            fontWeight: isSelected ? 600 : 400,
+                            color: isSelected
+                              ? "var(--color-text)"
+                              : "var(--color-text-secondary)",
+                            marginBottom: 2,
+                          }}>
+                            {SEGMENT_LABELS[segType] ?? segType}
+                          </div>
+                          <div style={{
+                            fontSize: 10,
+                            color: "var(--color-text-muted)",
+                          }}>
+                            {visibleCount}/{items.length} visible
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right — items for selected category */}
+                  <div style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "4px 8px",
+                  }}>
+                    {selectedItems.length === 0 ? (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        fontSize: 12,
+                        color: "var(--color-text-muted)",
+                      }}>
+                        Select a category
+                      </div>
+                    ) : (
+                      selectedItems.map((item, i) => {
+                        const isCurrentlyVisible = visible.includes(item.label);
+                        const isHiddenForDisplay = !isCurrentlyVisible;
+                        return (
+                          <EditToggleRow
+                            key={i}
+                            label={item.label}
+                            value={String(Math.round(item.index))}
+                            isHidden={isHiddenForDisplay}
+                            onToggle={async () => {
+                              const current = preferences.over_indexed ?? defaultVisible;
+                              const isVis = current.includes(item.label);
+                              if (isVis) {
+                                await updatePreference("over_indexed",
+                                  current.filter(k => k !== item.label));
+                              } else {
+                                if (current.length >= 5) {
+                                  toast("Maximum 5 audiences — hide one first to add another");
+                                  return;
+                                }
+                                await updatePreference("over_indexed", [...current, item.label]);
+                              }
+                            }}
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
             <IndexChart items={overIndexedItems} />
           )}
         </SectionCard>
@@ -347,8 +620,60 @@ export default function AudienceInsightsTab({
           )}
         </SectionCard>
 
-        <SectionCard title="Audience by Occupation" subtitle="Understand the background of your impressions">
-          {loading ? <SkeletonRows count={7} /> : (
+        <SectionCard
+          title="Audience by Occupation"
+          subtitle="Understand the background of your impressions"
+          action={
+            <button
+              onClick={() => setEditingOccupation(v => !v)}
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                fontSize: 11, fontWeight: 500,
+                color: editingOccupation ? "var(--color-text)" : "var(--color-text-muted)",
+                background: editingOccupation ? "var(--color-surface-alt)" : "transparent",
+                border: "1px solid var(--color-border)",
+                borderRadius: 6, padding: "3px 8px",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              <Settings2 size={11} />
+              {editingOccupation ? "Done" : "Manage"}
+            </button>
+          }
+        >
+          {loading ? <SkeletonRows count={7} /> : editingOccupation ? (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {allOccupationItems.map((o, i) => {
+                const visible = preferences.occupation ??
+                  allOccupationItems.slice(0, 6).map(x => x.label);
+                const isCurrentlyVisible = visible.includes(o.label);
+                const isHiddenForDisplay = !isCurrentlyVisible;
+                return (
+                  <EditToggleRow
+                    key={i}
+                    label={o.label}
+                    value={o.displayValue}
+                    isHidden={isHiddenForDisplay}
+                    onToggle={async () => {
+                      const current = preferences.occupation ??
+                        allOccupationItems.slice(0, 6).map(x => x.label);
+                      const isVis = current.includes(o.label);
+                      if (isVis) {
+                        await updatePreference("occupation",
+                          current.filter(k => k !== o.label));
+                      } else {
+                        if (current.length >= 6) {
+                          toast("Maximum 6 occupations — hide one first to add another");
+                          return;
+                        }
+                        await updatePreference("occupation", [...current, o.label]);
+                      }
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ) : (
             <RankedBarList items={occupationItems} />
           )}
         </SectionCard>

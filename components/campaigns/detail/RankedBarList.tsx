@@ -37,9 +37,7 @@ export default function RankedBarList({
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {items.map((item, i) => {
         const pct   = Math.min((item.value / max) * 100, 100);
-        const color = barColor ?? (graduated
-          ? i === 0 ? DARK : i < 3 ? MID : MUTED
-          : DARK);
+        const color = DARK;
 
         return (
           <div key={item.label + i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
