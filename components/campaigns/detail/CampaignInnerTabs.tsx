@@ -8,7 +8,7 @@ const TABS: { key: InnerTab; label: string; spark?: boolean }[] = [
   { key: "performance", label: "Campaign Performance" },
   { key: "audience",    label: "Audience Insights" },
   { key: "creative",    label: "Creative Breakdown" },
-  { key: "ai",          label: "Insights AI", spark: true },
+  // { key: "ai",          label: "Insights AI", spark: true },    ← AI tab is currently disabled pending further development 
 ];
 
 interface CampaignInnerTabsProps {
