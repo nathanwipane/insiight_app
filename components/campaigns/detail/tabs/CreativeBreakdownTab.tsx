@@ -64,7 +64,7 @@ export default function CreativeBreakdownTab() {
       {/* ── Creative cards ── */}
       {loading ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 1 }).map((_, i) => (
             <div key={i} style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 10, overflow: "hidden" }}>
               <Skeleton height={112} borderRadius={0} />
               <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>

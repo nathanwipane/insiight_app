@@ -25,8 +25,10 @@ export const PERMISSIONS = {
   ORG_ADD_REMOVE: 'organisation:add_remove',
   ORG_VIEW: 'organisation:view',
   AUDIENCE_PLAN_VIEW: 'audience_plan:view',
-  AUDIENCE_PLAN_EDIT: 'audience_plan:edit', 
+  AUDIENCE_PLAN_EDIT: 'audience_plan:edit',
 
+  // Proof of Play
+  POPS_MANAGE: 'pops:manage',
 };
 
 export const ROLE_PERMISSIONS = {
