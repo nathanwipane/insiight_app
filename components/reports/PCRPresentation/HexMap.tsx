@@ -202,7 +202,7 @@ export default function HexMap({ data, primary = "#95bbc1" }: HexMapProps) {
       <div style={{
         position: "absolute",
         top: 12, right: 12,
-        background: "rgba(115, 115, 115, 0.65)",
+        background: "rgba(0,0,0,0.65)",
         backdropFilter: "blur(4px)",
         borderRadius: 8,
         padding: "10px 12px",

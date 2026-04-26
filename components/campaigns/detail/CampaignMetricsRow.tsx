@@ -67,8 +67,8 @@ export default function CampaignMetricsRow({ metrics, isLoading, aiOverview }: C
         ) : (
           METRICS_CONFIG.map(m => (
             <div key={m.key} style={{ padding: "16px" }}>
-              <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 2 }}>{m.label}</div>
-              <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginBottom: 10 }}>{m.sub}</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 2 }}>{m.label}</div>
+              <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 10 }}>{m.sub}</div>
               <div style={{ fontSize: 26, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 8 }}>
                 {values[m.key]}
               </div>

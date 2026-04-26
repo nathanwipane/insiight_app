@@ -25,10 +25,10 @@ type CreativeItemV2 = {
 function CreativeStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-text-muted)", lineHeight: 1, marginBottom: 3 }}>
+      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--color-text-secondary)", lineHeight: 1, marginBottom: 3 }}>
         {label}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text)" }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
         {value}
       </div>
     </div>
@@ -80,7 +80,7 @@ export default function CreativeBreakdownTab() {
           subtitle="Creative performance data will appear here once available."
         />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(creativeEntries.length, 3)}, 1fr)`, gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {creativeEntries.map((item, idx) => {
             const topImpressions = creativeEntries[0]?.total_impressions ?? 1;
             const isTop = item.total_impressions === topImpressions;
@@ -99,12 +99,12 @@ export default function CreativeBreakdownTab() {
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #1f2937, #111827)", opacity: 0.85 }} />
                   <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                     <Film size={18} style={{ color: "#6b7280" }} />
-                    <span style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", padding: "0 12px" }}>{item.creative_id}</span>
+                    <span style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "0 12px" }}>{item.creative_id}</span>
                   </div>
                   {/* Badges */}
                   <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
                     {isTop && (
-                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "rgba(16,185,129,0.2)", color: "#34d399", fontWeight: 500 }}>
+                      <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(16,185,129,0.2)", color: "#34d399", fontWeight: 500 }}>
                         top
                       </span>
                     )}
@@ -118,7 +118,7 @@ export default function CreativeBreakdownTab() {
                     <CreativeStat label="Impressions" value={formatImpressions(item.total_impressions)} />
                     <CreativeStat label="First Played" value={new Date(item.first_play_date).toLocaleDateString("en-AU", { day: "numeric", month: "short" })} />
                   </div>
-                  <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10 }}>
+                  <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                     <span style={{ color: "var(--color-text-muted)" }}>Last played</span>
                     <span style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
                       {new Date(item.last_play_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "2-digit" })}
