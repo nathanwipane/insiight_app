@@ -19,6 +19,7 @@
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "h3-js": "^4.4.0",
+    "heic2any": "^0.0.4",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.7.0",
     "mapbox-gl": "^3.22.0",
